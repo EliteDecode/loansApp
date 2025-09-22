@@ -3,7 +3,16 @@ import React from "react";
 
 export interface ButtonProps {
   children: React.ReactNode;
-  variant?: "primary" | "secondary" | "outline" | "danger" | "green";
+  variant?:
+    | "primary"
+    | "neutral"
+    | "success"
+    | "outline"
+    | "danger"
+    | "warning"
+    | "ghost"
+    | "muted";
+
   size?: "sm" | "md" | "lg";
   loading?: boolean;
   onClick?: () => void;

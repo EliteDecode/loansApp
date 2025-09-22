@@ -532,7 +532,7 @@ export default function AddClient() {
 
                   <div className="mt-12 flex items-center justify-between">
                     <Button
-                      variant={activeStep > 0 ? "primary" : "secondary"}
+                      variant={activeStep > 0 ? "primary" : "neutral"}
                       onClick={handleBack}
                       disabled={activeStep < 1}
                     >

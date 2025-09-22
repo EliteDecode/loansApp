@@ -13,6 +13,11 @@ export const sidebarLinks = [
     icon: User,
   },
   {
+    name: "Loans",
+    link: ROUTES.LOANS,
+    icon: NotepadText,
+  },
+  {
     name: "Loan Requests",
     link: ROUTES.LOAN_REQUESTS,
     icon: NotepadText,
@@ -23,3 +28,5 @@ export const sidebarLinks = [
     icon: BanknoteArrowUp,
   },
 ];
+
+export const ROLE = "manager";

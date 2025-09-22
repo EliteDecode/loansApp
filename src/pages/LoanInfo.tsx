@@ -11,6 +11,7 @@ import Table from "@/components/Table/Table";
 import type { Column } from "@/components/Table/Table.types";
 import { useNavigate } from "react-router-dom";
 import { ROLE } from "@/lib/utils";
+import PageHeader from "@/components/PageHeader/PageHeader";
 
 const payments = [
   {
@@ -150,7 +151,7 @@ const data = [
   },
 ];
 
-export default function ClientDetails() {
+export default function () {
   const naviagte = useNavigate();
 
   function getStatusColor(status: string) {
@@ -168,13 +169,18 @@ export default function ClientDetails() {
 
   return (
     <div className="bg-white p-6 space-y-8">
+      <PageHeader
+        title="Loans"
+        subtitle="Manage and track all loan applications"
+      />
+
       <div
         className="flex items-center gap-2 cursor-pointer w-fit"
         onClick={() => naviagte(-1)}
       >
         <img src={arrowLeft} alt="arrowLeft" />
         <p className="text-[14px] leading-[145%] text-primary">
-          back to All Clients
+          back to All Loans
         </p>
       </div>
 
@@ -195,17 +201,21 @@ export default function ClientDetails() {
           </div>
 
           <div className="flex lg:flex-row flex-col items-center md:gap-4 gap-2 flex-wrap ">
-            <Button height="h-[55px]" width="lg:w-[205px] w-full">
-              Edit Client Info
+            <Button
+              height="h-[55px]"
+              variant="success"
+              width="lg:w-[205px] w-full"
+            >
+              Approve Loan
             </Button>
 
             {ROLE == "manager" ? (
               <Button
                 height="h-[55px]"
                 width="lg:w-[205px] w-full"
-                variant="warning"
+                variant="danger"
               >
-                Suspend Client
+                Approve Loan
               </Button>
             ) : (
               <Button
@@ -217,11 +227,7 @@ export default function ClientDetails() {
               </Button>
             )}
 
-            <Button
-              height="h-[55px]"
-              width="lg:w-[205px] w-full"
-              variant="outline"
-            >
+            <Button height="h-[55px]" width="lg:w-[205px] w-full">
               Send Reminder
             </Button>
           </div>

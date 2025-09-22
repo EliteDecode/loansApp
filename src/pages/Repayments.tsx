@@ -1,8 +1,11 @@
 import PageHeader from "@/components/PageHeader/PageHeader";
 import RepaymentsMetricsCard from "@/components/RepaymentsMetricsCard/RepaymentsMetricsCard";
+import ClientsRepaymentSchedule from "@/components/ui/ClientsRepaymentSchedule";
 import RepaymentCalendar from "@/components/ui/RepaymentCalendar";
+import ManualPaymentEntries from "@/components/ui/ManualPaymentEntries";
 import { Tab, Tabs } from "@mui/material";
 import React, { useState } from "react";
+import Reminders from "@/components/ui/Reminders";
 
 export default function Repayments() {
   const [value, setValue] = useState(0);
@@ -32,7 +35,7 @@ export default function Repayments() {
           <RepaymentsMetricsCard name="Active Clients" amount="34" />
         </div>
 
-        <div className="bg-white p-6 rounded-[12px]">
+        <div className="bg-white p-6 rounded-[12px] mb-5">
           <Tabs
             value={value}
             onChange={handleChange}
@@ -94,6 +97,9 @@ export default function Repayments() {
           </Tabs>
 
           {value === 0 && <RepaymentCalendar />}
+          {value === 1 && <ClientsRepaymentSchedule />}
+          {value === 2 && <ManualPaymentEntries />}
+          {value === 3 && <Reminders />}
         </div>
       </div>
     </div>

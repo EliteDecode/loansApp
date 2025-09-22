@@ -11,7 +11,7 @@ import PaymentAlertCard from "@/components/PaymentAlertCard/PaymentAlertCard";
 import { Tab, Tabs } from "@mui/material";
 import PageHeader from "@/components/PageHeader/PageHeader";
 
-export default function Dashboard() {
+export default function CreditAgentDashboard() {
   const [value, setValue] = useState(0);
 
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {

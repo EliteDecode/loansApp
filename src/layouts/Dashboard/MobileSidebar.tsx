@@ -21,7 +21,7 @@ const MobileSidebar = ({ isOpen, setIsOpen }: any) => {
         ></div>
       )}
       <motion.div
-        className="fixed w-[280px] px-4 py-6 left-0 right-0 z-10 md:top-0 bg-white h-screen"
+        className="fixed w-[280px] px-4 py-6 left-0 right-0 z-20 md:top-0 bg-white h-screen"
         initial={{ x: "-100%" }}
         animate={{ x: isOpen ? "0%" : "-100%" }}
       >

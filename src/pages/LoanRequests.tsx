@@ -14,6 +14,7 @@ import Table from "@/components/Table/Table";
 import type { Column } from "@/components/Table/Table.types";
 import { EllipsisVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import CreateNewLoan from "@/components/ui/CreateNewLoan";
 
 export default function LoanRequests() {
   const navigate = useNavigate();
@@ -282,86 +283,7 @@ export default function LoanRequests() {
             />
           </Tabs>
 
-          {value === 0 && (
-            <div className="space-y-6">
-              <h1 className="text-[20px] leading-[120%] tracking-[-2%] font-medium text-gray-700">
-                Loan Requests
-              </h1>
-
-              <Formik
-                initialValues={{
-                  client: null,
-                  loanAmount: "",
-                  loanType: "",
-                  // client: null,
-                }}
-                validationSchema={validationSchema}
-                onSubmit={(values) => {
-                  console.log("Selected client:", values.client);
-                }}
-              >
-                {() => (
-                  <Form className="space-y-6 w-full">
-                    <SearchSelect
-                      name="client"
-                      label="Select Client"
-                      placeholder="Search by name or phone number"
-                      fetchClients={fetchClients}
-                    />
-
-                    <div className="space-y-6">
-                      <div className="flex flex-row gap-2 items-center">
-                        <img src={moneyIcon} alt="money icon" />
-                        <h1 className="text-[18px] leading-[145%] tracking-[-2%] font-medium text-gray-700">
-                          Loan Details
-                        </h1>
-                      </div>
-
-                      <div className="space-y-4">
-                        <TextInput
-                          name="loanAmount"
-                          type="number"
-                          label="Loan Amount"
-                          placeholder="Enter loan amount"
-                        />
-
-                        <FormSelect
-                          name="loanType"
-                          label="Loan Type"
-                          options={options}
-                          placeholder="SME Business Growth Loan"
-                          icon={<img src={dropDown} alt="icon" />}
-                        />
-
-                        <div className="w-full flex flex-row gap-4">
-                          <div className="w-[80%]">
-                            <TextInput
-                              name="loanTenure"
-                              type="text"
-                              label="Loan Tenure"
-                              placeholder="Enter loan amount"
-                            />
-                          </div>
-
-                          <div className="w-[20%]">
-                            <FormSelect
-                              name="loanType"
-                              label="Loan Type"
-                              options={options}
-                              placeholder="SME Business Growth Loan"
-                              icon={<img src={dropDown} alt="icon" />}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button type="submit">submit</Button>
-                  </Form>
-                )}
-              </Formik>
-            </div>
-          )}
+          {value === 0 && <CreateNewLoan />}
           {value === 1 && (
             <div className="space-y-4 pb-4 lg:min-h-[559px] h-full">
               <Table columns={columns} data={data} />

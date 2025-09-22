@@ -25,10 +25,13 @@ const Button: React.FC<ButtonProps> = ({
 
   const styles = {
     primary: "bg-primary text-white",
-    secondary: "bg-gray-300 text-white hover:bg-gray-300",
-    green: "bg-secondary text-white",
+    muted: "bg-gray-500 text-white",
+    neutral: "bg-gray-300 text-white hover:bg-gray-400", // instead of "secondary"
+    success: "bg-secondary text-white", // instead of "green"
     outline: "border-[1.5px] border-primary text-primary hover:bg-gray-100",
-    danger: "bg-red-600 text-white hover:bg-red-700",
+    danger: "bg-[#CB1A14] text-white hover:bg-red-700",
+    warning: "bg-yellow-500 text-white hover:bg-yellow-600", // new option
+    ghost: "bg-transparent text-primary hover:bg-gray-100", // subtle button
   };
 
   // Only apply size if width/height not set
