@@ -4,7 +4,7 @@ import PageHeader from "@/components/PageHeader/PageHeader";
 import infoHexagon from "@/assets/icons/info-hexagon.svg";
 import verifiedGreen from "@/assets/icons/verifiedGreen.svg";
 import blueMoney from "@/assets/icons/blue-money.svg";
-import warning from "@/assets/icons/info-triangle.svg";
+import warning from "@/assets/icons/info-triangle-red.svg";
 import SelectInput from "@/components/SelectInput/SelectInput";
 import { ErrorMessage, Field, Form, Formik, type FieldProps } from "formik";
 import { Search } from "lucide-react";

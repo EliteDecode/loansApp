@@ -41,7 +41,7 @@ export default function () {
       render: (_: any, row: any) => (
         <div
           className="flex items-center gap-3 text-[14px] leading-[145%] font-semibold"
-          onClick={() => navigate(`/Loan-info/${row.id}`)}
+          onClick={() => navigate(`loan-info/${row.id}`)}
         >
           <p className="text-primary cursor-pointer hidden md:block">
             View Details
