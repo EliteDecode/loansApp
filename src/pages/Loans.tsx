@@ -13,7 +13,7 @@ import { Search } from "lucide-react";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { useState } from "react";
 import { Tab, Tabs } from "@mui/material";
 import AllLoan from "@/components/ui/AllLoan";
@@ -163,12 +163,15 @@ export default function Loans() {
                       {({ field, form }: FieldProps) => (
                         <DatePicker
                           value={field.value ? dayjs(field.value) : null}
-                          onChange={(val) => {
+                          onChange={(val, _context) => {
                             const formatted = val
-                              ? val.format("YYYY-MM-DD")
+                              ? dayjs(val).format("YYYY-MM-DD")
                               : "";
                             form.setFieldValue(field.name, formatted);
-                            updateUrl({ ...form.values, startDate: formatted });
+                            updateUrl({
+                              ...form.values,
+                              [field.name]: formatted,
+                            });
                           }}
                           slotProps={{
                             textField: {
@@ -197,12 +200,15 @@ export default function Loans() {
                       {({ field, form }: FieldProps) => (
                         <DatePicker
                           value={field.value ? dayjs(field.value) : null}
-                          onChange={(val) => {
+                          onChange={(val, _context) => {
                             const formatted = val
-                              ? val.format("YYYY-MM-DD")
+                              ? dayjs(val).format("YYYY-MM-DD")
                               : "";
                             form.setFieldValue(field.name, formatted);
-                            updateUrl({ ...form.values, endDate: formatted });
+                            updateUrl({
+                              ...form.values,
+                              [field.name]: formatted,
+                            });
                           }}
                           slotProps={{
                             textField: {

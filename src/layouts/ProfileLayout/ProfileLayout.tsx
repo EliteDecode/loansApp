@@ -1,5 +1,5 @@
 import PageHeader from "@/components/PageHeader/PageHeader";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";

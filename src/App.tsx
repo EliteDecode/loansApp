@@ -17,6 +17,13 @@ import AdminDashboard from "./pages/AdminDashboard";
 import { ROLE } from "./lib/utils";
 import Loans from "./pages/Loans";
 import LoanInfo from "./pages/LoanInfo";
+import Payments from "./pages/Payments";
+import CreditAgents from "./pages/CreditAgents";
+import CreditAgentsInfo from "./pages/CreditAgentsInfo";
+import AddAgent from "./pages/AddAgent";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
+import LoginPage from "./pages/LoginPage";
 
 function App() {
   return (
@@ -39,6 +46,17 @@ function App() {
         <Route path="loan-requests/loan-summary" element={<LoanSummary />} />
 
         <Route path="repayments" element={<Repayments />} />
+        <Route path="payments" element={<Payments />} />
+
+        <Route path="Reports" element={<Reports />} />
+        <Route path="settings" element={<Settings />} />
+
+        <Route path="credit-agents" element={<CreditAgents />} />
+        <Route path="credit-agents/new" element={<AddAgent />} />
+        <Route
+          path="credit-agents/credit-agents-info/:id"
+          element={<CreditAgentsInfo />}
+        />
 
         {/* Profile layout with nested routes */}
         <Route path="profile" element={<ProfileLayout />}>
@@ -48,6 +66,7 @@ function App() {
           <Route path="notifications" element={<ProfileNotifications />} />
         </Route>
       </Route>
+      <Route path="login" element={<LoginPage />} />
     </Routes>
   );
 }

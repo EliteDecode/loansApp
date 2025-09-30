@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
 
 type BottomSheetProps = {
   open: boolean;
@@ -43,7 +42,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
             drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.2}
-            onDragEnd={(event, info) => {
+            onDragEnd={(_, info) => {
               if (info.offset.y > 100) {
                 // if dragged down enough, close sheet
                 onClose();

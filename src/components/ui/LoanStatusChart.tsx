@@ -1,7 +1,7 @@
 "use client";
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { Box, Typography, Stack } from "@mui/material";
+import { PieChart, Pie, Cell, Tooltip } from "recharts";
+import { Box, Stack } from "@mui/material";
 import money1 from "@/assets/icons/money-1.svg"; // adjust path
 
 const data = [

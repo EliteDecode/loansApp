@@ -48,7 +48,7 @@ const Button: React.FC<ButtonProps> = ({
       className={`${base} ${sizeClass} ${styles[variant]} ${
         width ? width : ""
       } ${height ? height : ""} ${
-        loading ? "opacity-70 cursor-not-allowed" : ""
+        disabled || loading ? "opacity-70 cursor-not-allowed" : ""
       }`}
     >
       {loading ? (

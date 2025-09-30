@@ -1,4 +1,3 @@
-import React from "react";
 import type { Column } from "../Table/Table.types";
 import Table from "../Table/Table";
 

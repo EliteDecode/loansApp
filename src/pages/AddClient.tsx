@@ -412,7 +412,7 @@ export default function AddClient() {
 
                   {/* step 2 */}
                   {activeStep === 1 && (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       <SelectInput
                         name="employmentType"
                         label="Employment Type"

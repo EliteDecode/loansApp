@@ -1,6 +1,4 @@
-import React from "react";
 import Table from "../Table/Table";
-
 import addPrimary from "@/assets/icons/addPrimary.svg";
 import rightArrow from "@/assets/icons/rightArrow.svg";
 import leftArrow from "@/assets/icons/leftArrow.svg";

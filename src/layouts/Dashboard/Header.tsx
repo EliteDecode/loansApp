@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
 import close from "@/assets/icons/close.svg";
-import LogoutModal from "@/components/modals/logoutModal";
+import LogoutModal from "@/components/modals/LogoutModal";
 
 const Header = ({ isOpen, setIsOpen }: any) => {
   const [toggleProfile, setToggleProfile] = useState(false);

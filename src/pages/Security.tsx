@@ -2,7 +2,6 @@ import Button from "@/components/Button/Button";
 import TextInput from "@/components/TextInput/TextInput";
 import { Form, Formik } from "formik";
 import * as Yup from "yup";
-import React from "react";
 
 // Validation schema
 const SecuritySchema = Yup.object().shape({
@@ -11,7 +10,7 @@ const SecuritySchema = Yup.object().shape({
     .min(6, "Password must be at least 6 characters")
     .required("New password is required"),
   confirmPassword: Yup.string()
-    .oneOf([Yup.ref("newPassword"), null], "Passwords must match")
+    .oneOf([Yup.ref("newPassword"), ""], "Passwords must match")
     .required("Confirm password is required"),
 });
 

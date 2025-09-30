@@ -15,6 +15,18 @@ export const ROUTES = {
   // Repayments
   REPAYMENTS: "repayments",
 
+  // payments
+  PAYMENTS: "payments",
+
+  // Repayments
+  CREDITAGENTS: "credit-agents",
+
+  // Settings
+  SETTINGS: "Settings",
+
+  // Reports
+  REPORTS: "Reports",
+
   // Profile
   PROFILE: "profile",
   PROFILE_BASIC_INFO: "profile/basic-info",

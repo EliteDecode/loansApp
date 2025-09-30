@@ -1,4 +1,3 @@
-import React from "react";
 import Table from "../Table/Table";
 
 import addPrimary from "@/assets/icons/addPrimary.svg";

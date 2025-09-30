@@ -1,6 +1,5 @@
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import React from "react";
 import Button from "../../Button/Button";
 import type { RejectLoanModalProps } from "./RejectLoanModal.types";
 

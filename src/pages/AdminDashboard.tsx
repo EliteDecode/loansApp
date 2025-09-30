@@ -1,15 +1,10 @@
-import { useState } from "react";
 import card from "@/assets/icons/card.svg";
 import money from "@/assets/icons/money-coloured.svg";
 import userGroup from "@/assets/icons/user-group.svg";
 import infoHexagon from "@/assets/icons/info-hexagon.svg";
 import check from "@/assets/icons/check.svg";
 import add from "@/assets/icons/add.svg";
-import bell from "@/assets/icons/bell.svg";
-
 import MetricsCard from "@/components/MetricsCard/MetricsCard";
-import PaymentAlertCard from "@/components/PaymentAlertCard/PaymentAlertCard";
-import { Tab, Tabs } from "@mui/material";
 import PageHeader from "@/components/PageHeader/PageHeader";
 import LoanStatusChart from "@/components/ui/LoanStatusChart";
 import RepaymentPerformanceChart from "@/components/ui/RepaymentPerformanceChart";
@@ -17,12 +12,6 @@ import type { Column } from "@/components/Table/Table.types";
 import Table from "@/components/Table/Table";
 
 export default function AdminDashboard() {
-  const [value, setValue] = useState(0);
-
-  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
-
   const columns: Column[] = [
     { header: "AGENTS", accessor: "name" },
     { header: "CLIENTS", accessor: "numberOfPeople" },

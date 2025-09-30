@@ -1,28 +1,15 @@
 import arrowLeft from "@/assets/icons/arrow-left.svg";
-import receipt from "@/assets/icons/receipt.svg";
-import money from "@/assets/icons/money-1.svg";
-import extraMoney from "@/assets/icons/money.svg";
-import pdf from "@/assets/icons/pdf.svg";
-import verified from "@/assets/icons/verifiedGreen.svg";
-
 import Button from "@/components/Button/Button";
-import AgentNotesForm from "@/components/ui/AgentNotesForm";
-import Table from "@/components/Table/Table";
-import type { Column } from "@/components/Table/Table.types";
 import { useNavigate } from "react-router-dom";
-import { ROLE } from "@/lib/utils";
 import PageHeader from "@/components/PageHeader/PageHeader";
 import { useState } from "react";
 import { Tab, Tabs } from "@mui/material";
 import ClientsInfo from "@/components/ui/ClientsInfo";
 import GuarantorsDetails from "@/components/ui/GuarantorsDetails";
 import LoanTerms from "@/components/ui/LoanTerms";
-import AttachmentsAdmin from "@/components/ui/DocumentsAdmin";
 import DocumentsAdmin from "@/components/ui/DocumentsAdmin";
 import ActivityLogs from "@/components/ui/ActivityLogs";
 import Modal from "@/components/Modal/Modal";
-import { useFormik } from "formik";
-import * as Yup from "yup";
 import ApproveLoanModal from "@/components/modals/ApproveLoanModal/ApproveLoanModal";
 import ApproveLoanConfrimModal from "@/components/modals/ApproveLoanConfrimModal/ApproveLoanConfrimModal";
 import RejectLoanModal from "@/components/modals/RejectLoanModal/RejectLoanModal";
@@ -56,7 +43,6 @@ export default function () {
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
-  const valueStatus = "Approved";
 
   const tabs = [
     "Clients Info",
@@ -65,19 +51,6 @@ export default function () {
     "Documents",
     "Activity Log",
   ];
-
-  function getStatusColor(status: string) {
-    switch (status) {
-      case "paid_on_time":
-        return "bg-green-600";
-      case "late_paid":
-        return "bg-yellow-500";
-      case "unpaid":
-        return "bg-red-600";
-      default:
-        return "bg-gray-400";
-    }
-  }
 
   return (
     <div className="bg-white p-6 space-y-8">

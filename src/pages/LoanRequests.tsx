@@ -1,15 +1,6 @@
-import Button from "@/components/Button/Button";
 import PageHeader from "@/components/PageHeader/PageHeader";
-
-import SearchSelect from "@/components/ui/SearchSelect";
 import { Tab, Tabs } from "@mui/material";
-import { Form, Formik } from "formik";
 import React, { useState } from "react";
-import * as Yup from "yup";
-import moneyIcon from "@/assets/icons/money-1.svg";
-import TextInput from "@/components/TextInput/TextInput";
-import FormSelect from "@/components/FormSelect/FormSelect";
-import dropDown from "@/assets/icons/dropDown.svg";
 import Table from "@/components/Table/Table";
 import type { Column } from "@/components/Table/Table.types";
 import { EllipsisVertical } from "lucide-react";
@@ -25,41 +16,6 @@ export default function LoanRequests() {
   };
 
   // Example: API fetcher (replace with real API call)
-  const fetchClients = async (query: string) => {
-    return new Promise<any[]>((resolve) => {
-      setTimeout(() => {
-        const all = [
-          { id: 1, name: "John Yinka", phone: "08123456789" },
-          { id: 2, name: "Jane Smith", phone: "08111112222" },
-          { id: 3, name: "David Johnson", phone: "08199998888" },
-        ];
-        resolve(
-          all.filter(
-            (c) =>
-              c.name.toLowerCase().includes(query.toLowerCase()) ||
-              c.phone.includes(query)
-          )
-        );
-      }, 1000); // simulate network delay
-    });
-  };
-
-  const validationSchema = Yup.object({
-    client: Yup.object().nullable().required("Please select a client"), // still an object
-    loanAmount: Yup.number()
-      .typeError("Loan amount must be a number")
-      .positive("Loan amount must be greater than 0")
-      .required("Please enter loan amount"),
-    loanType: Yup.number()
-      .typeError("Please select a valid loan yype")
-      .required("Please select loan type"),
-  });
-
-  const options = [
-    { value: 10, label: "Ten" },
-    { value: 20, label: "Twenty" },
-    { value: 30, label: "Thirty" },
-  ];
 
   const columns: Column[] = [
     { header: "CLIENT NAME", accessor: "name" },

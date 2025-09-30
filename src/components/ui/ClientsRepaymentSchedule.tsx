@@ -1,5 +1,5 @@
-import { EllipsisVertical, Search } from "lucide-react";
-import React, { useState } from "react";
+import { Search } from "lucide-react";
+import { useState } from "react";
 import type { Column } from "../Table/Table.types";
 import Table from "../Table/Table";
 import close from "@/assets/icons/close.svg";
@@ -40,7 +40,7 @@ export default function ClientsRepaymentSchedule() {
       header: "Actions",
       fixed: "right", // ✅ stick this column to the right
       accessor: "id",
-      render: (_: any, row: any) => (
+      render: (_: any) => (
         <div
           className="flex items-center gap-3 text-[14px] leading-[145%] font-semibold"
           //   onClick={() => navigate(`/clients/${row.id}`)}

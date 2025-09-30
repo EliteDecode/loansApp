@@ -34,7 +34,7 @@ const DesktopSidebar = () => {
                       className={`${
                         (val.name.toLowerCase() === "dashboard" &&
                           firstSegment === "") ||
-                        firstSegment === val.link.toLowerCase()
+                        firstSegment.toLowerCase() === val.link.toLowerCase()
                           ? "bg-primary font-medium text-white hover:bg-primary hover:text-white"
                           : ""
                       } flex gap-3 items-center text-[14px] leading-[145%] md:text-[14px] h-[44px] px-6 duration-300 hover:bg-[#F9FAFB] hover:text-primary rounded`}

@@ -8,7 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { Box, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 import money1 from "@/assets/icons/chart-up.svg"; // adjust path
 
 // Example data
