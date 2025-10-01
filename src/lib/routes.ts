@@ -18,6 +18,8 @@ export const ROUTES = {
   // payments
   PAYMENTS: "payments",
 
+  USER_MANAGEMENT: "user-management",
+
   // Repayments
   CREDITAGENTS: "credit-agents",
 
@@ -26,6 +28,9 @@ export const ROUTES = {
 
   // Reports
   REPORTS: "Reports",
+
+  // Reports
+  FINANCE: "finance",
 
   // Profile
   PROFILE: "profile",

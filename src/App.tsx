@@ -24,6 +24,8 @@ import AddAgent from "./pages/AddAgent";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import LoginPage from "./pages/LoginPage";
+import UserManagement from "./pages/UserManagement";
+import Finance from "./pages/Finance";
 
 function App() {
   return (
@@ -46,10 +48,16 @@ function App() {
         <Route path="loan-requests/loan-summary" element={<LoanSummary />} />
 
         <Route path="repayments" element={<Repayments />} />
+
         <Route path="payments" element={<Payments />} />
 
         <Route path="Reports" element={<Reports />} />
+
         <Route path="settings" element={<Settings />} />
+
+        <Route path="user-management" element={<UserManagement />} />
+
+        <Route path="finance" element={<Finance />} />
 
         <Route path="credit-agents" element={<CreditAgents />} />
         <Route path="credit-agents/new" element={<AddAgent />} />

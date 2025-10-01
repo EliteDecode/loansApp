@@ -15,7 +15,7 @@ export default function ProfileBasicInfo() {
     >
       {() => (
         <Form className="space-y-4">
-          <div className="md:text-[28px] text-[20px] leading-[120%] tracking-[-2%] py-6 font-semibold text-gray-700">
+          <div className="md:text-[28px] text-[20px] leading-[120%] tracking-[-2%] py-6 font-semibold text-gray-700 border-b-[0.2px] border-gray-400">
             Basic Information
           </div>
 

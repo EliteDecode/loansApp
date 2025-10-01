@@ -1,4 +1,14 @@
-import { BanknoteArrowUp, House, NotepadText, User } from "lucide-react";
+import {
+  Banknote,
+  BanknoteArrowUp,
+  ChartNetwork,
+  CreditCard,
+  House,
+  NotepadText,
+  Settings,
+  User,
+  Users,
+} from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 
 export const sidebarLinks = [
@@ -20,17 +30,27 @@ export const sidebarLinks = [
   {
     name: "Payments",
     link: ROUTES.PAYMENTS,
-    icon: NotepadText,
+    icon: CreditCard,
+  },
+  {
+    name: "User Management",
+    link: ROUTES.USER_MANAGEMENT,
+    icon: Users,
+  },
+  {
+    name: "Finance",
+    link: ROUTES.FINANCE,
+    icon: Banknote,
   },
   {
     name: "Credit Agents",
     link: ROUTES.CREDITAGENTS,
-    icon: NotepadText,
+    icon: Users,
   },
   {
     name: "Reports",
     link: ROUTES.REPORTS,
-    icon: NotepadText,
+    icon: ChartNetwork,
   },
   {
     name: "Loan Requests",
@@ -45,7 +65,7 @@ export const sidebarLinks = [
   {
     name: "Settings",
     link: ROUTES.SETTINGS,
-    icon: BanknoteArrowUp,
+    icon: Settings,
   },
 ];
 

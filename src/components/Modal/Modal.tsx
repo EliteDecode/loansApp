@@ -1,8 +1,6 @@
-"use client";
-
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 const sizeMap = {
   sm: "max-w-sm",
@@ -36,6 +34,17 @@ export default function Modal({
 }: ModalProps) {
   // Decide final width class
   const widthClass = maxWidth ? maxWidth : sizeMap[size] || sizeMap.md;
+
+  // 🔑 Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
