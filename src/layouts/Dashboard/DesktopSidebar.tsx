@@ -2,8 +2,14 @@ import { motion } from "framer-motion";
 import Logo from "../../assets/icons/logo.svg";
 import { sidebarLinks } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
+import info from "@/assets/icons/info-triangle-primary.svg";
 
-const DesktopSidebar = () => {
+// ✅ Props type
+interface DesktopSidebarProps {
+  setOpenShutdownModal: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const DesktopSidebar = ({ setOpenShutdownModal }: DesktopSidebarProps) => {
   const location = useLocation();
   const firstSegment = location.pathname.split("/")[1];
   console.log(firstSegment);
@@ -48,6 +54,18 @@ const DesktopSidebar = () => {
             );
           })}
         </ul>
+
+        <div className="mt-8 px-6  text-[14px] leading-[145%]">
+          <p className="font-medium text-[#CB1A14]">System Control</p>
+
+          <div
+            className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
+            onClick={() => setOpenShutdownModal(true)}
+          >
+            <img src={info} />
+            <p>Shutdown System</p>
+          </div>
+        </div>
       </motion.div>
     </section>
   );

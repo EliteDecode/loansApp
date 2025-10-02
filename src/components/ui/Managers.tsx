@@ -15,6 +15,10 @@ import leftArrow from "@/assets/icons/leftArrow.svg";
 import addPrimary from "@/assets/icons/addPrimary.svg";
 import Table from "../Table/Table";
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
+import Modal from "../Modal/Modal";
+import EditManager from "./EditManager";
+import ManagerDetails from "./ManagerDetails";
+import DeactivateManager from "./DeactivateManager";
 
 const validationSchema = Yup.object().shape({
   startDate: Yup.date().nullable(),
@@ -27,6 +31,10 @@ export default function Managers() {
   const navigate = useNavigate();
   const location = useLocation();
   const [age, setAge] = useState("");
+  // Modals
+  const [editmanager, setEditmanager] = useState(false);
+  const [managerDetails, setManagerDetails] = useState(false);
+  const [deactivateManager, setDeactivateManager] = useState(false);
 
   const queryParams = new URLSearchParams(location.search);
   const searchFromUrl = queryParams.get("search") || "";
@@ -110,6 +118,22 @@ export default function Managers() {
     },
   ];
 
+  const fakemanagerDetails = {
+    name: "Ubot Effiong",
+    AgentID: "#AG001",
+    email: "Uboteffiong@asavictory.com",
+    phoneNumber: "080123456789",
+    status: "active",
+  };
+
+  const handleRowClick = (row: any) => {
+    console.log("Row clicked:", row);
+    setManagerDetails(true);
+    // e.g. open a modal with row details
+    // setSelectedRow(row);
+    // setIsModalOpen(true);
+  };
+
   return (
     <div>
       <div className="bg-white p-6">
@@ -172,7 +196,12 @@ export default function Managers() {
                     />
                   </div>
 
-                  <Button icon={<img src={add} />}>Add New Agent</Button>
+                  <Button
+                    icon={<img src={add} />}
+                    // onClick={() => setManagerDetails(true)}
+                  >
+                    Add New Manager
+                  </Button>
                 </div>
 
                 {/* Filters */}
@@ -280,7 +309,7 @@ export default function Managers() {
             </select>
           </div>
         </div>
-        <Table columns={columns} data={data} />
+        <Table columns={columns} data={data} onRowClick={handleRowClick} />
         <div className="flex items-center justify-between text-[14px] leadng-[145%] text-gray-700 font-semibold">
           <button className="sm:px-4 px-2 py-2 flex items-center gap-2 border border-gray-300 rounded-[8px] cursor-pointer">
             <img src={addPrimary} className="hidden sm:block" />
@@ -297,6 +326,44 @@ export default function Managers() {
           </button>
         </div>
       </div>
+
+      <Modal
+        isOpen={managerDetails}
+        onClose={() => setManagerDetails(false)}
+        closeOnOutsideClick={true} // toggle this
+        title="Manager Details"
+        maxWidth="max-w-[593px]"
+      >
+        <ManagerDetails
+          // data={fakemanagerDetails}
+          onCancel={() => setManagerDetails(false)}
+          setDeactivateManager={setDeactivateManager}
+          setEditmanager={setEditmanager}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={editmanager}
+        onClose={() => setEditmanager(false)}
+        closeOnOutsideClick={true} // toggle this
+        title="Edit Manager"
+        maxWidth="max-w-[855px]"
+      >
+        <EditManager
+          data={fakemanagerDetails}
+          onCancel={() => setEditmanager(false)}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={deactivateManager}
+        onClose={() => setDeactivateManager(false)}
+        closeOnOutsideClick={true}
+        title="Confirm Action"
+        maxWidth="max-w-[455px]"
+      >
+        <DeactivateManager onCancel={() => setDeactivateManager(false)} />
+      </Modal>
     </div>
   );
 }

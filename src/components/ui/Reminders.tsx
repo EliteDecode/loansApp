@@ -5,7 +5,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import Button from "../Button/Button";
 import plane from "@/assets/icons/plane.svg";
-import mail from "@/assets/icons/mail.svg";
+import mail from "@/assets/icons/mail-primary.svg";
 
 export default function Reminders() {
   const columns: Column[] = [

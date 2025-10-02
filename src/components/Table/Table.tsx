@@ -2,8 +2,9 @@ import { useState } from "react";
 import type { TableProps } from "./Table.types";
 
 type TableWithSelectProps = TableProps & {
-  selectable?: boolean; // ✅ optional
+  selectable?: boolean;
   onSelectionChange?: (selectedRows: any[]) => void;
+  onRowClick?: (row: any) => void; // ✅ new prop
 };
 
 export default function Table({
@@ -11,6 +12,7 @@ export default function Table({
   data,
   selectable = false,
   onSelectionChange,
+  onRowClick, // ✅
 }: TableWithSelectProps) {
   const [selected, setSelected] = useState<any[]>([]);
 
@@ -67,9 +69,16 @@ export default function Table({
         <tbody>
           {data?.length > 0 ? (
             data.map((row, i) => (
-              <tr key={i} className="hover:bg-gray-100 transition-colors">
+              <tr
+                key={i}
+                className="hover:bg-gray-100 transition-colors cursor-pointer"
+                onClick={() => onRowClick?.(row)} // ✅ row click
+              >
                 {selectable && (
-                  <td className="px-4 py-[16.5px] border-b border-gray-200">
+                  <td
+                    className="px-4 py-[16.5px] border-b border-gray-200"
+                    onClick={(e) => e.stopPropagation()} // ✅ prevent checkbox click from triggering row click
+                  >
                     <input
                       type="checkbox"
                       checked={selected.some((r) => r.id === row.id)}

@@ -52,7 +52,6 @@ export default function CreditAgentsInfo() {
 
   const agentDetails = {
     name: "Ubot Effiong",
-    AgentID: "#AG001",
     email: "Uboteffiong@asavictory.com",
     phoneNumber: "080123456789",
     status: "active",

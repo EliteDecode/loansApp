@@ -3,9 +3,15 @@ import Header from "./Header";
 import MobileSidebar from "./MobileSidebar";
 import DesktopSidebar from "./DesktopSidebar";
 import { useEffect, useState } from "react";
+import Modal from "@/components/Modal/Modal";
+import ConfirmSystemShutdown from "@/components/ui/ConfirmSystemShutdown";
+import ShutdownPassword from "@/components/ui/ShutdownPassword";
 
 const index = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openShutdownModal, setOpenShutdownModal] = useState(false);
+  const [openShutdownPasswordModal, setOpenShutdownPasswordModal] =
+    useState(false);
 
   // Lock / unlock body scroll when sidebar opens
   useEffect(() => {
@@ -27,7 +33,7 @@ const index = () => {
         <MobileSidebar isOpen={isOpen} setIsOpen={setIsOpen} />
       </div>
       <div className="hidden lg:block">
-        <DesktopSidebar />
+        <DesktopSidebar setOpenShutdownModal={setOpenShutdownModal} />
       </div>
       <div className="w-full flex">
         <div className="overflow-hidden w-full lg:ml-[280px]">
@@ -40,6 +46,25 @@ const index = () => {
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={openShutdownModal}
+        onClose={() => setOpenShutdownModal(false)}
+        maxWidth="max-w-[613px]"
+      >
+        <ConfirmSystemShutdown
+          setOpenShutdownPasswordModal={setOpenShutdownPasswordModal}
+          onClose={() => setOpenShutdownModal(false)}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={openShutdownPasswordModal}
+        onClose={() => setOpenShutdownPasswordModal(false)}
+        maxWidth="max-w-[613px]"
+      >
+        <ShutdownPassword onClose={() => setOpenShutdownPasswordModal(false)} />
+      </Modal>
     </>
   );
 };
