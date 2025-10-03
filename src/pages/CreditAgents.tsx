@@ -137,7 +137,7 @@ export default function CreditAgents() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center lg:justify-between justify-end">
         <PageHeader
           title="Credit Agents"
           subtitle="Manage and track all credit agents activities"

@@ -161,7 +161,7 @@ export default function CreditAgents() {
             return (
               <Form className="space-y-6">
                 {/* Search Input */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-col lg:flex-row gap-2">
                   <div className="lg:max-w-[540px] w-full relative">
                     <Field
                       name="search"
@@ -174,7 +174,14 @@ export default function CreditAgents() {
                     />
                   </div>
 
-                  <Button icon={<img src={add} />}>Add New Agent</Button>
+                  <Button
+                    icon={<img src={add} />}
+                    width="lg:w-[185px] w-full"
+                    height="h-14"
+                  >
+                    {" "}
+                    Add New Agent
+                  </Button>
                 </div>
 
                 {/* Filters */}

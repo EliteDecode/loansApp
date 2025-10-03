@@ -183,7 +183,7 @@ export default function Managers() {
             return (
               <Form className="space-y-6">
                 {/* Search Input */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-col lg:flex-row gap-2">
                   <div className="lg:max-w-[540px] w-full relative">
                     <Field
                       name="search"
@@ -198,7 +198,8 @@ export default function Managers() {
 
                   <Button
                     icon={<img src={add} />}
-                    // onClick={() => setManagerDetails(true)}
+                    width="lg:w-[185px] w-full"
+                    height="h-14"
                   >
                     Add New Manager
                   </Button>

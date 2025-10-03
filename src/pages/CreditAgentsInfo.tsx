@@ -69,8 +69,8 @@ export default function CreditAgentsInfo() {
           </p>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
+        <div className="flex md:items-center items-start justify-between flex-col md:flex-row gap-4 w-full">
+          <div className="flex items-center gap-6 w-full">
             <img
               src={profileImage}
               alt=""
@@ -90,11 +90,13 @@ export default function CreditAgentsInfo() {
             </div>
           </div>
 
-          <div className="space-x-4">
+          <div className="space-x-4 space-y-4 w-full">
             <Button
               variant="outline"
               icon={<img src={editIcon} alt="" />}
               onClick={() => setOpenEditAgentModal(true)}
+              width="md:w-[145px] w-full"
+              height="h-14"
             >
               Edit Agent
             </Button>
@@ -102,6 +104,8 @@ export default function CreditAgentsInfo() {
               variant="danger"
               icon={<img src={deactivateIcon} alt="" />}
               onClick={() => setOpenDeactivateAgentModal(true)}
+              width="md:w-[198px] w-full"
+              height="h-14"
             >
               Deactivate Agent
             </Button>{" "}
