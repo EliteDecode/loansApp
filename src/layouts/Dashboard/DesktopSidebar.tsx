@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
 import Logo from "../../assets/icons/logo.svg";
-import { sidebarLinks } from "@/lib/utils";
+import { getFilteredSidebarLinks } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
 import info from "@/assets/icons/info-triangle-primary.svg";
+import type { RootState } from "@/store";
 
 // ✅ Props type
 interface DesktopSidebarProps {
@@ -11,9 +13,9 @@ interface DesktopSidebarProps {
 
 const DesktopSidebar = ({ setOpenShutdownModal }: DesktopSidebarProps) => {
   const location = useLocation();
+  const { role } = useSelector((state: RootState) => state.auth);
   const firstSegment = location.pathname.split("/")[1];
-  console.log(firstSegment);
-  console.log(sidebarLinks);
+  const filteredSidebarLinks = getFilteredSidebarLinks(role);
 
   return (
     <section className="fixed">
@@ -30,7 +32,7 @@ const DesktopSidebar = ({ setOpenShutdownModal }: DesktopSidebarProps) => {
         </Link>
 
         <ul className="mt-4">
-          {sidebarLinks.map((val, i) => {
+          {filteredSidebarLinks.map((val, i) => {
             return (
               <div className="" key={i}>
                 {
@@ -55,17 +57,20 @@ const DesktopSidebar = ({ setOpenShutdownModal }: DesktopSidebarProps) => {
           })}
         </ul>
 
-        <div className="mt-8 px-6  text-[14px] leading-[145%]">
-          <p className="font-medium text-[#CB1A14]">System Control</p>
+        {/* System Control - Only visible to Directors */}
+        {role === "director" && (
+          <div className="mt-8 px-6  text-[14px] leading-[145%]">
+            <p className="font-medium text-[#CB1A14]">System Control</p>
 
-          <div
-            className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
-            onClick={() => setOpenShutdownModal(true)}
-          >
-            <img src={info} />
-            <p>Shutdown System</p>
+            <div
+              className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
+              onClick={() => setOpenShutdownModal(true)}
+            >
+              <img src={info} />
+              <p>Shutdown System</p>
+            </div>
           </div>
-        </div>
+        )}
       </motion.div>
     </section>
   );

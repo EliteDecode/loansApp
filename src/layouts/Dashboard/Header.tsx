@@ -1,11 +1,13 @@
 import { Bell, ChevronDown, LogOut, Menu, Search, User, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { sidebarLinks } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
 import close from "@/assets/icons/close.svg";
 import LogoutModal from "@/components/modals/LogoutModal";
+import type { RootState } from "@/store";
 
 const Header = ({ isOpen, setIsOpen }: any) => {
   const [toggleProfile, setToggleProfile] = useState(false);
@@ -14,6 +16,31 @@ const Header = ({ isOpen, setIsOpen }: any) => {
 
   const location = useLocation();
   const firstPath = location.pathname.split("/")[1];
+
+  // Get user data from auth state
+  const { role, user } = useSelector((state: RootState) => state.auth);
+
+  // Format role for display
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case "director":
+        return "Director";
+      case "manager":
+        return "Manager";
+      case "creditAgent":
+        return "Credit Agent";
+      default:
+        return "User";
+    }
+  };
+
+  // Get user name from user data or use default
+  const getUserName = () => {
+    if (user && user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return "User";
+  };
 
   const title = sidebarLinks.find(
     (val) => val.link.replace("/", "") === firstPath
@@ -117,9 +144,11 @@ const Header = ({ isOpen, setIsOpen }: any) => {
           >
             <div className="leading-[145%] w-[100px] text-start">
               <h4 className="text-[14px] text-[#667185] font-medium">
-                David Imasuen
+                {getUserName()}
               </h4>
-              <p className="text-[12px] text-[#98A2B3]">Credit Agent</p>
+              <p className="text-[12px] text-[#98A2B3]">
+                {getRoleDisplayName(role)}
+              </p>
             </div>
             <ChevronDown
               className={`w-6 h-6 ${toggleProfile ? "rotate-180" : ""}`}

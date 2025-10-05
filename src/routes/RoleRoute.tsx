@@ -1,6 +1,7 @@
 // routes/RoleRoute.tsx
-import { useAuth } from "@/hooks/useAuth/useAuth";
+import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
+import type { RootState } from "@/store";
 
 type RoleRouteProps = {
   allowedRoles: string[];
@@ -8,10 +9,10 @@ type RoleRouteProps = {
 };
 
 export function RoleRoute({ allowedRoles, children }: RoleRouteProps) {
-  const { role } = useAuth(); // e.g. "credit-agent", "manager", "director"
+  const { role } = useSelector((state: RootState) => state.auth);
 
   if (!allowedRoles.includes(role)) {
-    return <Navigate to="/unauthorized" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

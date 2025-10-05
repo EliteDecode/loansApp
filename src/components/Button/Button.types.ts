@@ -22,4 +22,5 @@ export interface ButtonProps {
   type?: "button" | "reset" | "submit";
   width?: string;
   height?: string;
+  className?: string;
 }

@@ -13,6 +13,7 @@ const Button: React.FC<ButtonProps> = ({
   type = "button",
   width,
   height,
+  className,
 }) => {
   const base =
     "rounded-lg font-medium transition-colors inline-flex items-center justify-center gap-2 cursor-pointer";
@@ -49,7 +50,7 @@ const Button: React.FC<ButtonProps> = ({
         width ? width : ""
       } ${height ? height : ""} ${
         disabled || loading ? "opacity-70 cursor-not-allowed" : ""
-      }`}
+      } ${className || ""}`}
     >
       {loading ? (
         "Loading..."

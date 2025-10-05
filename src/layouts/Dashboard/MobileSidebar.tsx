@@ -1,12 +1,16 @@
-import { sidebarLinks } from "@/lib/utils";
+import { useSelector } from "react-redux";
+import { getFilteredSidebarLinks } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import Logo from "../../assets/icons/logo.svg";
+import type { RootState } from "@/store";
 import { Menu, X } from "lucide-react";
 
 const MobileSidebar = ({ isOpen, setIsOpen }: any) => {
   const location = useLocation();
+  const { role } = useSelector((state: RootState) => state.auth);
+  const filteredSidebarLinks = getFilteredSidebarLinks(role);
 
   const toggleDrawer = () => {
     setIsOpen(false);
@@ -38,7 +42,7 @@ const MobileSidebar = ({ isOpen, setIsOpen }: any) => {
         </div>
 
         <ul className="mt-[20px]">
-          {sidebarLinks.map((val, i) => {
+          {filteredSidebarLinks.map((val, i) => {
             const Icon = val.icon;
 
             return (
