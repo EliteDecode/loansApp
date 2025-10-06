@@ -1,96 +1,145 @@
 import receipt from "@/assets/icons/receipt.svg";
 import shield from "@/assets/icons/shield-primary.svg";
-import { Formik, Form, Field } from "formik";
+import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import TextInput from "../TextInput/TextInput";
 import Button from "../Button/Button";
 import SelectInput from "../SelectInput/SelectInput";
+import { useDispatch } from "react-redux";
+import { createLoanProduct } from "@/services/features";
+import { showErrorToast, showSuccessToast } from "@/lib/toastUtils";
+import type { AppDispatch } from "@/store";
 
-// ✅ Define form values type
 interface AddNewLoanValues {
-  roleName: string;
+  productName: string;
   description: string;
-  interest: string;
-  minTenure: string;
+  interestRate: number | string;
+  minLoanAmount: number | string;
+  maxLoanAmount: number | string;
+  penaltyRate: number | string;
+  minTenure: number | string;
+  maxTenure: number | string;
+  tenureUnit: string;
   repaymentFrequency: string;
-  status: string;
-  penaltyRate: string;
-  requireCollateral: boolean;
-  collateralTypes: {
-    idCard: boolean;
-    landDocument: boolean;
-    bankGuarantee: boolean;
-    carDocument: boolean;
-    houseDocument: boolean;
-    salaryCertificate: boolean;
-  };
+  gracePeriod: number | string;
+  requiresCollateral: boolean;
+  collateralDescription: string;
 }
 
-// ✅ Props type
 interface AddNewLoanProps {
   onClose: () => void;
 }
 
+// ✅ Tenure limits
+const TENURE_LIMITS = {
+  days: 30,
+  months: 12,
+  years: 10,
+};
+
 // ✅ Validation schema
 const validationSchema = Yup.object().shape({
-  roleName: Yup.string()
-    .min(3, "Role name must be at least 3 characters")
-    .required("Role name is required"),
-  description: Yup.string().required("Description is required"),
-  interest: Yup.number()
-    .typeError("Interest must be a number")
-    .min(1, "Must be at least 1%")
-    .required("Interest rate is required"),
-  minTenure: Yup.number()
-    .typeError("Tenure must be a number")
-    .min(1, "Must be at least 1 month")
-    .required("Minimum tenure is required"),
-  repaymentFrequency: Yup.string().required("Repayment frequency is required"),
-  status: Yup.string().required("Status is required"),
-  penaltyRate: Yup.number()
-    .typeError("Penalty must be a number")
-    .min(0, "Penalty cannot be negative")
-    .optional(),
+  productName: Yup.string()
+    .min(3, "Product name must be at least 3 characters")
+    .required("Product name is required"),
 
-  requireCollateral: Yup.boolean(),
-  collateralTypes: Yup.object().when("requireCollateral", {
+  description: Yup.string().required("Description is required"),
+
+  interestRate: Yup.number()
+    .typeError("Interest rate must be a number")
+    .min(1, "Interest rate must be at least 1%")
+    .max(100, "Interest rate cannot exceed 100%")
+    .required("Interest rate is required"),
+
+  minLoanAmount: Yup.number()
+    .typeError("Min loan amount must be a number")
+    .min(1000, "Minimum loan amount must be at least ₦1,000")
+    .required("Minimum loan amount is required"),
+
+  maxLoanAmount: Yup.number()
+    .typeError("Max loan amount must be a number")
+    .moreThan(
+      Yup.ref("minLoanAmount"),
+      "Max amount must be greater than min amount"
+    )
+    .required("Maximum loan amount is required"),
+
+  penaltyRate: Yup.number()
+    .typeError("Penalty rate must be a number")
+    .min(0, "Penalty rate cannot be negative")
+    .required("Penalty rate is required"),
+
+  tenureUnit: Yup.string()
+    .oneOf(["days", "months", "years"], "Invalid tenure unit")
+    .required("Tenure unit is required"),
+
+  // ✅ Validate minTenure based on tenureUnit
+  minTenure: Yup.number()
+    .typeError("Min tenure must be a number")
+    .min(1, "Min tenure must be at least 1")
+    .when("tenureUnit", (tenureUnit, schema) => {
+      const tenureKey = Array.isArray(tenureUnit) ? tenureUnit[0] : tenureUnit;
+      const limit = TENURE_LIMITS[tenureKey as keyof typeof TENURE_LIMITS];
+      return schema.max(
+        limit,
+        `For ${tenureUnit}, min tenure cannot exceed ${limit} ${tenureUnit}`
+      );
+    })
+    .required("Minimum tenure is required"),
+
+  // ✅ Validate maxTenure based on tenureUnit and minTenure
+  maxTenure: Yup.number()
+    .typeError("Max tenure must be a number")
+    .moreThan(
+      Yup.ref("minTenure"),
+      "Max tenure must be greater than min tenure"
+    )
+    .when("tenureUnit", (tenureUnit, schema) => {
+      const tenureKey = Array.isArray(tenureUnit) ? tenureUnit[0] : tenureUnit;
+      const limit = TENURE_LIMITS[tenureKey as keyof typeof TENURE_LIMITS];
+      return schema.max(
+        limit,
+        `For ${tenureUnit}, max tenure cannot exceed ${limit} ${tenureUnit}`
+      );
+    })
+    .required("Maximum tenure is required"),
+
+  repaymentFrequency: Yup.string()
+    .oneOf(["daily", "weekly", "monthly"], "Invalid repayment frequency")
+    .required("Repayment frequency is required"),
+
+  gracePeriod: Yup.number()
+    .typeError("Grace period must be a number")
+    .min(0, "Grace period cannot be negative")
+    .required("Grace period is required"),
+
+  requiresCollateral: Yup.boolean(),
+
+  collateralDescription: Yup.string().when("requiresCollateral", {
     is: true,
     then: (schema) =>
-      schema.test(
-        "at-least-one-selected",
-        "At least one collateral type must be selected",
-        (value) => Object.values(value || {}).some((val) => val === true)
-      ),
+      schema
+        .min(5, "Collateral description must be at least 5 characters")
+        .required("Collateral description is required"),
   }),
 });
 
-const collateralTypes = [
-  { name: "idCard", label: "ID Card" },
-  { name: "landDocument", label: "Land Document" },
-  { name: "bankGuarantee", label: "Bank Guarantee" },
-  { name: "carDocument", label: "Car Document" },
-  { name: "houseDocument", label: "House Document" },
-  { name: "salaryCertificate", label: "Salary Certificate" },
-];
-
 export default function AddNewLoan({ onClose }: AddNewLoanProps) {
+  const dispatch = useDispatch<AppDispatch>();
   const initialValues: AddNewLoanValues = {
-    roleName: "",
+    productName: "",
     description: "",
-    interest: "",
-    minTenure: "",
-    repaymentFrequency: "",
-    status: "",
+    interestRate: "",
+    minLoanAmount: "",
+    maxLoanAmount: "",
     penaltyRate: "",
-    requireCollateral: false,
-    collateralTypes: {
-      idCard: false,
-      landDocument: false,
-      bankGuarantee: false,
-      carDocument: false,
-      houseDocument: false,
-      salaryCertificate: false,
-    },
+    minTenure: "",
+    maxTenure: "",
+    tenureUnit: "days",
+    repaymentFrequency: "daily",
+    gracePeriod: "",
+    requiresCollateral: false,
+    collateralDescription: "",
   };
 
   return (
@@ -98,92 +147,163 @@ export default function AddNewLoan({ onClose }: AddNewLoanProps) {
       enableReinitialize
       initialValues={initialValues}
       validationSchema={validationSchema}
-      onSubmit={(values, { resetForm }) => {
-        console.log("✅ Form Submitted:", values);
-        resetForm({ values });
+      onSubmit={async (values, { resetForm, setSubmitting }) => {
+        console.log(values);
+        try {
+          const res = await dispatch(createLoanProduct(values)).unwrap();
+          showSuccessToast(res?.message); // friendly message
+          resetForm();
+          onClose();
+        } catch (err: any) {
+          const message =
+            err?.message ||
+            err?.response?.data?.message ||
+            "Failed to create loan product. Try again.";
+          showErrorToast(message);
+        } finally {
+          setSubmitting(false);
+        }
       }}
     >
       {({ isSubmitting, values }) => (
         <Form className="space-y-6 max-h-[80vh] overflow-auto">
-          {/* Financial Settings */}
           <div className="flex items-center gap-2">
-            <img src={receipt} />
+            <img src={receipt} alt="receipt icon" />
             <h1 className="text-[18px] leading-[145%] font-medium text-primary">
-              Financial Settings
+              Loan Product Details
             </h1>
           </div>
 
-          <Field name="interest" label="Interest Rate (%) *" as={TextInput} />
-          <Field
-            name="minTenure"
-            label="Min Tenure (months) *"
-            as={TextInput}
-          />
-          <Field
-            name="repaymentFrequency"
-            label="Repayment Frequency *"
-            as={TextInput}
+          <Field name="productName" label="Product Name *" as={TextInput} />
+          <Field name="description" label="Description *" as={TextInput} />
+
+          <TextInput
+            label="Interest Rate (%)"
+            name="interestRate"
+            type="tel"
+            min={0}
+            max={100}
+            placeholder="Enter rate"
           />
 
-          <Field name="status" as={SelectInput} label="Status">
-            <option value="" disabled className="text-gray-400">
-              Select repayment type
-            </option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+          <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
+            <Field
+              name="minLoanAmount"
+              label="Min Loan Amount (₦) *"
+              as={TextInput}
+              type="tel"
+              amount={true}
+            />
+            <Field
+              name="maxLoanAmount"
+              label="Max Loan Amount (₦) *"
+              as={TextInput}
+              type="tel"
+              amount={true}
+            />
+          </div>
+
+          <Field
+            name="penaltyRate"
+            label="Penalty Rate (%) *"
+            as={TextInput}
+            type="tel"
+            min={0}
+            max={100}
+          />
+
+          <Field name="tenureUnit" as={SelectInput} label="Tenure Unit *">
+            <option value="days">Days</option>
+            <option value="months">Months</option>
+            <option value="years">Years</option>
           </Field>
 
-          <Field name="penaltyRate" label="Penalty Rate (%)" as={TextInput} />
+          <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
+            <TextInput
+              name="minTenure"
+              label={`Min Tenure (${values.tenureUnit}) *`}
+              type="tel"
+              max={
+                TENURE_LIMITS[values.tenureUnit as keyof typeof TENURE_LIMITS]
+              }
+            />
+            <TextInput
+              name="maxTenure"
+              label={`Max Tenure (${values.tenureUnit}) *`}
+              type="tel"
+              max={
+                TENURE_LIMITS[values.tenureUnit as keyof typeof TENURE_LIMITS]
+              }
+            />
+          </div>
 
-          {/* Collateral Requirements */}
+          <Field
+            name="repaymentFrequency"
+            as={SelectInput}
+            label="Repayment Frequency *"
+          >
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </Field>
+
+          <TextInput
+            name="gracePeriod"
+            label="Grace Period (days) *"
+            type="tel"
+            max={365}
+          />
+
+          {/* Collateral Section */}
           <div className="space-y-6">
             <div className="flex items-center gap-2">
-              <img src={shield} />
+              <img src={shield} alt="shield icon" />
               <h1 className="text-[18px] leading-[145%] font-medium text-primary">
-                Collateral Requirements
+                Collateral Requirement
               </h1>
             </div>
 
-            {/* Require Collateral Checkbox */}
             <div className="flex items-center gap-2">
               <Field
                 type="checkbox"
-                name="requireCollateral"
+                name="requiresCollateral"
                 className="border-[1.5px] border-gray-300 w-6 h-6 rounded accent-primary"
               />
               <label className="text-[14px] leading-[145%] text-gray-600">
-                Require Collateral for this loan product
+                Require Collateral for this loan
               </label>
             </div>
 
-            {/* ✅ Show collateralTypes only if checkbox is checked */}
-            {values.requireCollateral && (
-              <div>
-                <p className="font-medium text-gray-800">
-                  Accepted Collateral Types
-                </p>
-                <div className="space-y-4 mt-2 grid md:grid-cols-2 grid-cols-1">
-                  {collateralTypes.map((perm) => (
-                    <label
-                      key={perm.name}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <Field
-                        type="checkbox"
-                        name={`collateralTypes.${perm.name}`}
-                        className="border-[1.5px] border-gray-300 w-6 h-6 rounded accent-primary"
-                      />
-                      <span className="text-[14px] leading-[145%] text-gray-600">
-                        {perm.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+            {values.requiresCollateral && (
+              <div className="flex flex-col gap-1 text-[14px] leading-[145%] w-full">
+                <label
+                  htmlFor="collateralDescription"
+                  className="font-medium text-gray-900"
+                >
+                  Collateral Description *
+                </label>
+
+                <Field name="collateralDescription">
+                  {({ field }: { field: any }) => (
+                    <textarea
+                      {...field}
+                      id="collateralDescription"
+                      placeholder="Describe the collateral..."
+                      rows={4}
+                      className="resize-none h-auto max-h-40 overflow-y-auto border border-gray-300 rounded-[6px] p-4 outline-primary placeholder:text-gray-400 focus:border-primary"
+                    />
+                  )}
+                </Field>
+
+                <ErrorMessage
+                  name="collateralDescription"
+                  component="span"
+                  className="text-red-500 text-xs"
+                />
               </div>
             )}
           </div>
 
-          {/* Buttons */}
           <div className="flex items-center justify-end gap-4">
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
