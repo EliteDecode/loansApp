@@ -1,57 +1,122 @@
 import { Form, Formik } from "formik";
 import SelectInput from "../SelectInput/SelectInput";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import type { Column } from "../Table/Table.types";
-import Table from "../Table/Table";
-import addPrimary from "@/assets/icons/addPrimary.svg";
-import rightArrow from "@/assets/icons/rightArrow.svg";
-import leftArrow from "@/assets/icons/leftArrow.svg";
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+
+import CustomTable from "../CustomTable/CustomTable";
+import { showErrorToast, showSuccessToast } from "@/lib/toastUtils";
+import {
+  getAllLoanProducts,
+  toggleLoanProductStatus,
+} from "@/services/features";
+import type { AppDispatch, RootState } from "@/store";
+import Modal from "../Modal/Modal";
+import EditLoanProduct from "./EditLoanProduct";
+import Button from "../Button/Button";
 
 export default function LoanProducts() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const dispatch = useDispatch<AppDispatch>();
 
-  // Hydrate initial values from URL
+  const [editLoanModal, setEditLoanModal] = useState(false);
+  const [deactivateLoanModal, setDeactivateLoanModal] = useState(false);
+  const [selectedLoan, setSelectedLoan] = useState<any>(null);
+
+  const openEditModal = (loan: any) => {
+    setSelectedLoan(loan);
+    setEditLoanModal(true);
+  };
+
+  const { loanProducts, isLoading, isError } = useSelector(
+    (state: RootState) => state.loanProduct
+  );
+
+  console.log(loanProducts);
+
   const initialValues = {
     status: searchParams.get("status") || "",
-    agents: searchParams.get("agents") || "",
     tenure: searchParams.get("tenure") || "",
   };
 
-  // Helper to update URL when filters change
   const updateUrl = (values: typeof initialValues) => {
     const query = new URLSearchParams();
-
     Object.entries(values).forEach(([key, value]) => {
       if (value) query.set(key, value);
     });
-
-    navigate(`/Reports?${query.toString()}`);
+    navigate(`/Settings?${query.toString()}`);
   };
 
-  const columns: Column[] = [
+  const handleDeactivateLoan = async () => {
+    if (!selectedLoan?._id) return;
+
+    try {
+      const res = await dispatch(
+        toggleLoanProductStatus(selectedLoan._id)
+      ).unwrap();
+
+      showSuccessToast(res?.message || "Loan product deactivated successfully");
+      setDeactivateLoanModal(false);
+
+      // ✅ Refetch to validate and refresh instantly
+      dispatch(getAllLoanProducts());
+    } catch (err: any) {
+      const message =
+        err?.message ||
+        err?.response?.data?.message ||
+        "Failed to deactivate loan product. Try again.";
+      showErrorToast(message);
+    }
+  };
+
+  // ✅ Fetch on mount or when filters change
+  useEffect(() => {
+    const filters = Object.fromEntries(searchParams.entries());
+    dispatch(getAllLoanProducts(filters))
+      .unwrap()
+      .catch(() => showErrorToast("Failed to load loan products"));
+  }, [dispatch, searchParams]);
+
+  // ✅ Define table columns
+  const loanColumns = [
+    { header: "LOAN NAME", accessor: "productName" },
+    { header: "INTEREST RATE%", accessor: "interestRate" },
     {
-      header: "LOAN NAME",
-      accessor: "date",
-      render: (_: any, row: any) => (
-        <div className="text-[16px] leading-[145%] font-medium text-gray-500">
-          <h1 className="font-medium">{row.principal}</h1>
-          <p className="text-[14px]">{row.principal}</p>
+      header: "TENURE RANGE",
+      accessor: "tenure",
+      render: (_: string, row: any) => (
+        <div className="text-sm text-gray-500 flex items-center gap-1">
+          <p>{row?.maxTenure}</p>-<p>{row?.minTenure}</p>
+          <p>{row?.tenureUnit}</p>
         </div>
       ),
     },
-    { header: "INTEREST RATE%", accessor: "date" },
-    { header: "TENURE RANGE", accessor: "date" },
     {
       header: "COLLATERAL",
+      accessor: "requiresCollateral",
+      render: (_: string, row: any) => (
+        <span
+          className={`px-2 text-[12px] leading-[145%] rounded-[12px] ${
+            row.requiresCollateral
+              ? "bg-[#0F973D1A] text-[#0F973D]" // Yes
+              : "bg-[#CB1A141A] text-[#CB1A14]" // No
+          }`}
+        >
+          {row.requiresCollateral ? "Required" : "Not Required"}
+        </span>
+      ),
+    },
+    {
+      header: "STATUS",
       accessor: "status",
       render: (value: string) => (
         <span
           className={`px-2 text-[12px] leading-[145%] rounded-[12px] ${
             {
-              Approved: "bg-[#0F973D1A] text-[#0F973D]",
+              active: "bg-[#0F973D1A] text-[#0F973D]",
               Pending: "bg-[#F3A2181A] text-[#F3A218]",
-              Overdue: "bg-[#CB1A141A] text-[#CB1A14]",
+              inactive: "bg-[#CB1A141A] text-[#CB1A14]",
             }[value] || "bg-gray-100 text-gray-600" // fallback for unknown values
           }`}
         >
@@ -59,119 +124,43 @@ export default function LoanProducts() {
         </span>
       ),
     },
-
     {
-      header: "AMOUNT PAID",
-      accessor: "date",
-      render: () => (
+      header: "ACTION",
+      accessor: "amountPaid",
+      render: (_: string, row: any) => (
         <div className="text-[14px] leading-[145%] font-semibold flex items-center gap-3">
-          <h1 className="text-primary cursor-pointer">Edit</h1>
-          <p className="text-gray-500 cursor-pointer">Deactivate</p>
+          <h1
+            className="text-primary cursor-pointer"
+            onClick={() => openEditModal(row)}
+          >
+            Edit
+          </h1>
+          <p
+            className={`cursor-pointer font-medium transition-colors duration-200 ${
+              row.status === "active"
+                ? "text-[#CB1A14] hover:text-red-700"
+                : "text-[#0F973D] hover:text-green-700"
+            }`}
+            onClick={() => {
+              setSelectedLoan(row);
+              setDeactivateLoanModal(true);
+            }}
+          >
+            {row.status === "active" ? "Deactivate" : "Activate"}
+          </p>
         </div>
       ),
     },
   ];
 
-  const data = [
-    {
-      id: 1,
-      principal: "₦41,667",
-      interest: "₦6,250",
-      totalAmount: "₦850,000",
-      balance: "₦850,000",
-      date: "Dec 20, 2024",
-      status: "Active",
-    },
-    {
-      id: 2,
-      principal: "₦30,000",
-      interest: "₦4,500",
-      totalAmount: "₦450,000",
-      balance: "₦320,000",
-      date: "Nov 12, 2024",
-      status: "Pending",
-    },
-    {
-      id: 3,
-      principal: "₦55,000",
-      interest: "₦8,250",
-      totalAmount: "₦660,000",
-      balance: "₦100,000",
-      date: "Oct 5, 2024",
-      status: "Completed",
-    },
-    {
-      id: 4,
-      principal: "₦25,000",
-      interest: "₦3,750",
-      totalAmount: "₦300,000",
-      balance: "₦150,000",
-      date: "Sep 18, 2024",
-      status: "Overdue",
-    },
-    {
-      id: 5,
-      principal: "₦70,000",
-      interest: "₦10,500",
-      totalAmount: "₦980,000",
-      balance: "₦980,000",
-      date: "Jan 15, 2025",
-      status: "Active",
-    },
-    {
-      id: 6,
-      principal: "₦60,000",
-      interest: "₦9,000",
-      totalAmount: "₦720,000",
-      balance: "₦500,000",
-      date: "Feb 2, 2025",
-      status: "Pending",
-    },
-    {
-      id: 7,
-      principal: "₦45,000",
-      interest: "₦6,750",
-      totalAmount: "₦540,000",
-      balance: "₦0",
-      date: "Aug 1, 2024",
-      status: "Completed",
-    },
-    {
-      id: 8,
-      principal: "₦80,000",
-      interest: "₦12,000",
-      totalAmount: "₦960,000",
-      balance: "₦960,000",
-      date: "Mar 10, 2025",
-      status: "Active",
-    },
-    {
-      id: 9,
-      principal: "₦35,000",
-      interest: "₦5,250",
-      totalAmount: "₦420,000",
-      balance: "₦200,000",
-      date: "Jul 22, 2024",
-      status: "Overdue",
-    },
-    {
-      id: 10,
-      principal: "₦50,000",
-      interest: "₦7,500",
-      totalAmount: "₦600,000",
-      balance: "₦600,000",
-      date: "Apr 9, 2025",
-      status: "Active",
-    },
-  ];
-
   return (
     <div>
+      {/* ---------------- FILTERS ---------------- */}
       <div className="space-y-4 bg-white rounded-xl p-6">
         <Formik
           enableReinitialize
           initialValues={initialValues}
-          onSubmit={() => {}} // no normal submit
+          onSubmit={() => {}}
         >
           {({ values, setFieldValue }) => (
             <Form className="space-y-4">
@@ -210,29 +199,97 @@ export default function LoanProducts() {
         </Formik>
       </div>
 
+      {/* ---------------- TABLE ---------------- */}
       <div className="space-y-6 bg-white rounded-xl p-6">
         <h1 className="text-[24px] leading-[120%] tracking-[-2%] font-medium text-gray-700">
           Loan Details
         </h1>
 
-        <Table columns={columns} data={data} />
-
-        <div className="flex items-center justify-between text-[14px] leadng-[145%] text-gray-700 font-semibold">
-          <button className="sm:px-4 px-2 py-2 flex items-center gap-2 border border-gray-300 rounded-[8px] cursor-pointer">
-            <img src={addPrimary} className="hidden sm:block" />
-            <p className="hidden sm:block">Previous</p>
-            <img src={leftArrow} className="block sm:hidden" />
-          </button>
-
-          <p>Showing 1–20 of 250 clients</p>
-
-          <button className="sm:px-4 px-2 py-2 flex items-center gap-2 border border-gray-300 rounded-[8px] cursor-pointer">
-            <p className="hidden sm:block">Next</p>
-            <img src={addPrimary} className="hidden sm:block" />
-            <img src={rightArrow} className="block sm:hidden" />
-          </button>
-        </div>
+        <CustomTable
+          data={loanProducts || []}
+          columns={loanColumns}
+          searchable={true}
+          searchPlaceholder="Search loans by ID, product, or status"
+          searchFields={["_id", "productName", "status"]}
+          pagination={true}
+          pageSize={5}
+          showPageSizeSelector={true}
+          pageSizeOptions={[5, 10, 20]}
+          emptyMessage={
+            isError
+              ? "Failed to load loan data"
+              : "No loans found for this client"
+          }
+          loading={isLoading}
+        />
       </div>
+
+      <Modal
+        isOpen={editLoanModal}
+        onClose={() => setEditLoanModal(false)}
+        closeOnOutsideClick={true}
+        title="Edit Loan Product"
+        maxWidth="max-w-[877px]"
+      >
+        <EditLoanProduct
+          loanData={selectedLoan}
+          onClose={() => setEditLoanModal(false)}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={deactivateLoanModal}
+        onClose={() => setDeactivateLoanModal(false)}
+        closeOnOutsideClick={true}
+        title={
+          selectedLoan?.status === "active"
+            ? "Deactivate Loan"
+            : "Activate Loan"
+        }
+        maxWidth="max-w-[455px]"
+      >
+        <div className="space-y-8 pt-4 border-t border-gray-200">
+          <p className="text-[16px] leading-[145%] text-gray-700">
+            Are you sure you want to{" "}
+            <span
+              className={
+                selectedLoan?.status === "active"
+                  ? "text-[#CB1A14] font-semibold uppercase"
+                  : "text-[#0F973D] font-semibold uppercase"
+              }
+            >
+              {selectedLoan?.status === "active" ? "Deactivate" : "Activate"}
+            </span>{" "}
+            the loan product{" "}
+            <span className="font-medium text-gray-900">
+              {selectedLoan?.productName}
+            </span>
+            ?
+          </p>
+
+          <div className="flex items-center justify-end gap-4">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setDeactivateLoanModal(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              variant={selectedLoan?.status === "active" ? "danger" : "success"}
+              onClick={handleDeactivateLoan}
+              disabled={isLoading}
+            >
+              {isLoading
+                ? selectedLoan?.status === "active"
+                  ? "Deactivating..."
+                  : "Activating..."
+                : "Confirm"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
