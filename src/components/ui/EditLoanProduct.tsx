@@ -6,11 +6,12 @@ import TextInput from "../TextInput/TextInput";
 import Button from "../Button/Button";
 import SelectInput from "../SelectInput/SelectInput";
 import { useDispatch } from "react-redux";
-import { createLoanProduct } from "@/services/features";
+import { updateLoanProduct } from "@/services/features"; // 👈 import your update thunk
 import { showErrorToast, showSuccessToast } from "@/lib/toastUtils";
 import type { AppDispatch } from "@/store";
 
-interface AddNewLoanValues {
+interface EditLoanValues {
+  _id: string;
   productName: string;
   description: string;
   interestRate: number | string;
@@ -26,151 +27,105 @@ interface AddNewLoanValues {
   collateralDescription: string;
 }
 
-interface AddNewLoanProps {
+interface EditLoanProps {
+  loanData: EditLoanValues; // 👈 prefill data
   onClose: () => void;
 }
 
-// ✅ Tenure limits
 const TENURE_LIMITS = {
   days: 30,
   months: 12,
   years: 10,
 };
 
-// ✅ Validation schema
 const validationSchema = Yup.object().shape({
-  productName: Yup.string()
-    .min(3, "Product name must be at least 3 characters")
-    .required("Product name is required"),
-
+  productName: Yup.string().min(3).required("Product name is required"),
   description: Yup.string().required("Description is required"),
-
   interestRate: Yup.number()
     .typeError("Interest rate must be a number")
-    .min(1, "Interest rate must be at least 1%")
-    .max(100, "Interest rate cannot exceed 100%")
-    .required("Interest rate is required"),
-
+    .min(1)
+    .max(100)
+    .required(),
   minLoanAmount: Yup.number()
     .typeError("Min loan amount must be a number")
-    .min(1000, "Minimum loan amount must be at least ₦1,000")
-    .required("Minimum loan amount is required"),
-
+    .min(1000)
+    .required(),
   maxLoanAmount: Yup.number()
     .typeError("Max loan amount must be a number")
-    .moreThan(
-      Yup.ref("minLoanAmount"),
-      "Max amount must be greater than min amount"
-    )
-    .required("Maximum loan amount is required"),
-
-  penaltyRate: Yup.number()
-    .typeError("Penalty rate must be a number")
-    .min(0, "Penalty rate cannot be negative")
-    .required("Penalty rate is required"),
-
-  tenureUnit: Yup.string()
-    .oneOf(["days", "months", "years"], "Invalid tenure unit")
-    .required("Tenure unit is required"),
-
-  // ✅ Validate minTenure based on tenureUnit
+    .moreThan(Yup.ref("minLoanAmount"))
+    .required(),
+  penaltyRate: Yup.number().typeError("Penalty rate must be a number").min(0),
+  tenureUnit: Yup.string().required(),
   minTenure: Yup.number()
     .typeError("Min tenure must be a number")
-    .min(1, "Min tenure must be at least 1")
-    .when("tenureUnit", (tenureUnit, schema) => {
-      const tenureKey = Array.isArray(tenureUnit) ? tenureUnit[0] : tenureUnit;
-      const limit = TENURE_LIMITS[tenureKey as keyof typeof TENURE_LIMITS];
-      return schema.max(
-        limit,
-        `For ${tenureUnit}, min tenure cannot exceed ${limit} ${tenureUnit}`
-      );
-    })
-    .required("Minimum tenure is required"),
-
-  // ✅ Validate maxTenure based on tenureUnit and minTenure
+    .min(1)
+    .required(),
   maxTenure: Yup.number()
     .typeError("Max tenure must be a number")
-    .moreThan(
-      Yup.ref("minTenure"),
-      "Max tenure must be greater than min tenure"
-    )
-    .when("tenureUnit", (tenureUnit, schema) => {
-      const tenureKey = Array.isArray(tenureUnit) ? tenureUnit[0] : tenureUnit;
-      const limit = TENURE_LIMITS[tenureKey as keyof typeof TENURE_LIMITS];
-      return schema.max(
-        limit,
-        `For ${tenureUnit}, max tenure cannot exceed ${limit} ${tenureUnit}`
-      );
-    })
-    .required("Maximum tenure is required"),
-
-  repaymentFrequency: Yup.string()
-    .oneOf(["daily", "weekly", "monthly"], "Invalid repayment frequency")
-    .required("Repayment frequency is required"),
-
+    .moreThan(Yup.ref("minTenure"))
+    .required(),
+  repaymentFrequency: Yup.string().required(),
   gracePeriod: Yup.number()
     .typeError("Grace period must be a number")
-    .min(0, "Grace period cannot be negative")
-    .required("Grace period is required"),
-
+    .min(0)
+    .required(),
   requiresCollateral: Yup.boolean(),
-
   collateralDescription: Yup.string().when("requiresCollateral", {
     is: true,
     then: (schema) =>
-      schema
-        .min(5, "Collateral description must be at least 5 characters")
-        .required("Collateral description is required"),
+      schema.min(5, "Collateral description must be at least 5 characters"),
   }),
 });
 
-export default function AddNewLoan({ onClose }: AddNewLoanProps) {
+export default function EditLoanProduct({ loanData, onClose }: EditLoanProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const initialValues: AddNewLoanValues = {
-    productName: "",
-    description: "",
-    interestRate: "",
-    minLoanAmount: "",
-    maxLoanAmount: "",
-    penaltyRate: "",
-    minTenure: "",
-    maxTenure: "",
-    tenureUnit: "days",
-    repaymentFrequency: "daily",
-    gracePeriod: "",
-    requiresCollateral: false,
-    collateralDescription: "",
-  };
 
   return (
     <Formik
       enableReinitialize
-      initialValues={initialValues}
+      initialValues={loanData}
       validationSchema={validationSchema}
-      onSubmit={async (values, { resetForm, setSubmitting }) => {
-        console.log(values);
+      onSubmit={async (values, { setSubmitting }) => {
         try {
-          const res = await dispatch(createLoanProduct(values)).unwrap();
-          showSuccessToast(res?.message); // friendly message
-          resetForm();
+          const payload = {
+            productId: loanData._id, // ✅ keep the original ID
+            data: {
+              productName: values.productName,
+              description: values.description,
+              interestRate: values.interestRate,
+              minLoanAmount: values.minLoanAmount,
+              maxLoanAmount: values.maxLoanAmount,
+              penaltyRate: values.penaltyRate,
+              minTenure: values.minTenure,
+              maxTenure: values.maxTenure,
+              tenureUnit: values.tenureUnit,
+              repaymentFrequency: values.repaymentFrequency,
+              gracePeriod: values.gracePeriod,
+              requiresCollateral: values.requiresCollateral,
+              collateralDescription: values.collateralDescription,
+            },
+          };
+
+          const res = await dispatch(updateLoanProduct(payload)).unwrap();
+          showSuccessToast(res?.message || "Loan product updated successfully");
           onClose();
         } catch (err: any) {
           const message =
             err?.message ||
             err?.response?.data?.message ||
-            "Failed to create loan product. Try again.";
+            "Failed to update loan product. Try again.";
           showErrorToast(message);
         } finally {
           setSubmitting(false);
         }
       }}
     >
-      {({ isSubmitting, values }) => (
+      {({ isSubmitting, values, dirty }) => (
         <Form className="space-y-6 max-h-[80vh] overflow-auto">
           <div className="flex items-center gap-2">
             <img src={receipt} alt="receipt icon" />
             <h1 className="text-[18px] leading-[145%] font-medium text-primary">
-              Loan Product Details
+              Edit Loan Product
             </h1>
           </div>
 
@@ -181,25 +136,23 @@ export default function AddNewLoan({ onClose }: AddNewLoanProps) {
             label="Interest Rate (%)"
             name="interestRate"
             type="tel"
-            min={0}
-            max={100}
             placeholder="Enter rate"
           />
 
-          <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <Field
               name="minLoanAmount"
               label="Min Loan Amount (₦) *"
               as={TextInput}
               type="tel"
-              amount={true}
+              amount
             />
             <Field
               name="maxLoanAmount"
               label="Max Loan Amount (₦) *"
               as={TextInput}
               type="tel"
-              amount={true}
+              amount
             />
           </div>
 
@@ -208,8 +161,6 @@ export default function AddNewLoan({ onClose }: AddNewLoanProps) {
             label="Penalty Rate (%) *"
             as={TextInput}
             type="tel"
-            min={0}
-            max={100}
           />
 
           <Field name="tenureUnit" as={SelectInput} label="Tenure Unit *">
@@ -218,7 +169,7 @@ export default function AddNewLoan({ onClose }: AddNewLoanProps) {
             <option value="years">Years</option>
           </Field>
 
-          <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <TextInput
               name="minTenure"
               label={`Min Tenure (${values.tenureUnit}) *`}
@@ -251,7 +202,6 @@ export default function AddNewLoan({ onClose }: AddNewLoanProps) {
             name="gracePeriod"
             label="Grace Period (days) *"
             type="tel"
-            max={365}
           />
 
           {/* Collateral Section */}
@@ -308,8 +258,15 @@ export default function AddNewLoan({ onClose }: AddNewLoanProps) {
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Loan"}
+            <Button
+              type="submit"
+              disabled={isSubmitting || !dirty} // ✅ Disable if form untouched or submitting
+            >
+              {isSubmitting
+                ? "Updating..."
+                : dirty
+                ? "Update Loan"
+                : "No Changes"}
             </Button>
           </div>
         </Form>
