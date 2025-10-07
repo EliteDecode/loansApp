@@ -20,6 +20,7 @@ interface FormSelectProps {
   loading?: boolean;
   icon?: ReactNode;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export default function FormSelect({
@@ -29,6 +30,7 @@ export default function FormSelect({
   loading = false,
   icon,
   placeholder,
+  disabled = false,
 }: FormSelectProps) {
   const [field, meta, helpers] = useField(name);
 
@@ -57,6 +59,7 @@ export default function FormSelect({
           id={name}
           value={field.value || ""}
           onChange={(e) => helpers.setValue(e.target.value)}
+          disabled={disabled}
           IconComponent={() => null}
           endAdornment={
             <>

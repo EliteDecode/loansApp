@@ -25,101 +25,77 @@ import * as Yup from "yup";
 import TextInput from "@/components/TextInput/TextInput";
 import SelectInput from "@/components/SelectInput/SelectInput";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import FileDropzone from "@/components/FileDropzone/FileDropzone";
-import { generatePassword } from "@/lib/utils";
+import FileUploadWithProgress from "@/components/FileUploadWithProgress/FileUploadWithProgress";
 import ReviewAgentInfo from "@/components/ui/ReviewAgentInfo";
 
 const steps = [
   "Personal Info",
   "Work & Role Details",
   "Document Uploads",
-  "System Access",
   "Review",
 ];
 
-export interface ClientFormValues {
+export interface AgentFormValues {
   firstName: string;
   lastName: string;
-  gender: string;
-  dob: Date | null;
+  gender: "male" | "female";
+  dateOfBirth: Date | null;
   email: string;
   phoneNumber: string;
   residentialAddress: string;
   stateOfResidence: string;
-  LGAOfResidence: string;
-  employmentType: string;
-  occupation: string;
-  monthlyIncome: string | number;
-  employer: string;
-  workAddress: string;
-  yearsInBusiness: string | number;
-  guarantorFullName: string;
-  relationshipToClient: string;
-  guarantorPhoneNumber: string;
-  guarantorAddress: string;
-  idDocument: File | null;
-  addressDocument: File | null;
-  passportDocument: File | null;
-  employmentLetter: File | null;
-  doe: Date | null;
-  status: string;
-  temporaryPassword: string;
+  lgaOfResidence: string;
+  bankName: string;
+  bankAccount: string;
+  employmentType: "full-time" | "part-time" | "contract" | "self-employed";
+  dateOfEmployment: Date | null;
+  validNIN: string;
+  utilityBill: string;
+  passport: string;
+  employmentLetter: string;
+  password: string;
+  confirmPassword: string;
+  salaryAmount: string | number;
 }
 
-const initialValues: ClientFormValues = {
-  firstName: "Elizabeth",
-  lastName: "Johnson",
-  gender: "Female",
-  dob: new Date("1995-04-15"),
-  email: "elizabeth.johnson@example.com",
-  phoneNumber: "08012345678",
-  residentialAddress: "12 Adewale Street, Ikeja, Lagos",
-  stateOfResidence: "Lagos",
-  LGAOfResidence: "Ikeja",
-  employmentType: "Full-time",
-  occupation: "Software Engineer",
-  monthlyIncome: 250000,
-  employer: "Tech Solutions Ltd",
-  workAddress: "15 Marina Road, Lagos",
-  yearsInBusiness: 5,
-  guarantorFullName: "John Doe",
-  relationshipToClient: "Brother",
-  guarantorPhoneNumber: "08098765432",
-  guarantorAddress: "45 Olabisi Onabanjo Street, Lagos",
-  idDocument: null,
-  addressDocument: null,
-  passportDocument: null,
-  employmentLetter: null,
-  doe: new Date("2022-12-31"),
-  status: "active",
-  temporaryPassword: "Temp@1234",
+const initialValues: AgentFormValues = {
+  firstName: "",
+  lastName: "",
+  gender: "male",
+  dateOfBirth: null,
+  email: "",
+  phoneNumber: "",
+  residentialAddress: "",
+  stateOfResidence: "",
+  lgaOfResidence: "",
+  bankName: "",
+  bankAccount: "",
+  employmentType: "full-time",
+  dateOfEmployment: null,
+  validNIN: "",
+  utilityBill: "",
+  passport: "",
+  employmentLetter: "",
+  password: "",
+  confirmPassword: "",
+  salaryAmount: "",
 };
 
-// ✅ Reusable file schema
-const fileValidation = (label: string) =>
-  Yup.mixed<File>()
-    .nullable()
-    .required(`${label} is required`)
-    .test("fileSize", "File too large (max 5 MB)", (value) =>
-      value ? value.size <= 5 * 1024 * 1024 : false
-    )
-    .test("fileType", "Unsupported file format", (value) =>
-      value
-        ? ["image/jpeg", "image/png", "application/pdf"].includes(value.type)
-        : false
-    );
+// ✅ Reusable URL validation for Cloudinary uploads
+const urlValidation = (label: string) =>
+  Yup.string().url(`Invalid ${label} URL`).required(`${label} is required`);
 
 export default function AddAgent() {
   const [open, setOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
 
   const handleFinish = (
-    values: ClientFormValues,
-    _helpers?: FormikHelpers<ClientFormValues>
+    values: AgentFormValues,
+    _helpers?: FormikHelpers<AgentFormValues>
   ) => {
     console.log(values);
     setOpen(true);
-    alert("🎉 Client added successfully!");
+    alert("🎉 Agent added successfully!");
   };
 
   const handleNext = async (
@@ -166,51 +142,61 @@ export default function AddAgent() {
     return null;
   }
 
-  // 🔹 Validation schemas array (kept same as your code)
+  // 🔹 Validation schemas array
   const validationSchemas = [
     // Step 1: Personal Info
     Yup.object({
       firstName: Yup.string().required("First name is required"),
       lastName: Yup.string().required("Last name is required"),
-      gender: Yup.string().required("Gender is required"),
-      dob: Yup.date()
+      gender: Yup.string()
+        .oneOf(["male", "female"])
+        .required("Gender is required"),
+      dateOfBirth: Yup.date()
         .nullable()
         .required("Date of birth is required")
         .max(new Date(), "Date of birth cannot be in the future"),
       email: Yup.string().email("Invalid email").required("Email is required"),
       phoneNumber: Yup.string()
-        .matches(/^[0-9]{11}$/, "Phone number must be 11 digits")
+        .matches(
+          /^\+234[0-9]{10}$/,
+          "Phone number must be in format +234XXXXXXXXXX"
+        )
         .required("Phone number is required"),
       residentialAddress: Yup.string().required(
         "Residential address is required"
       ),
       stateOfResidence: Yup.string().required("State of residence is required"),
-      LGAOfResidence: Yup.string().required("LGA of residence is required"),
+      lgaOfResidence: Yup.string().required("LGA of residence is required"),
     }),
 
-    // Step 2: Employment Info
+    // Step 2: Work & Role Details
     Yup.object({
-      employmentType: Yup.string().required("Employment type is required"),
-      doe: Yup.date()
+      bankName: Yup.string().required("Bank name is required"),
+      bankAccount: Yup.string().required("Bank account is required"),
+      employmentType: Yup.string()
+        .oneOf(["full-time", "part-time", "contract", "self-employed"])
+        .required("Employment type is required"),
+      dateOfEmployment: Yup.date()
         .nullable()
         .required("Date of employment is required")
         .max(new Date(), "Date of employment cannot be in the future"),
-      status: Yup.string().required("Status is required"),
+      salaryAmount: Yup.number()
+        .positive("Salary must be positive")
+        .required("Salary amount is required"),
+      password: Yup.string()
+        .min(6, "Password must be at least 6 characters")
+        .required("Password is required"),
+      confirmPassword: Yup.string()
+        .oneOf([Yup.ref("password")], "Passwords must match")
+        .required("Confirm password is required"),
     }),
 
     // Step 3: Document Uploads
     Yup.object({
-      idDocument: fileValidation("Valid ID"),
-      addressDocument: fileValidation("Utility Bill / Proof of Address"),
-      passportDocument: fileValidation("Passport photograph"),
-      employmentLetter: fileValidation("Employment Letter"),
-    }),
-
-    // Step 4: System Access (temporaryPassword is auto-generated so no need for strict validation)
-    Yup.object({
-      temporaryPassword: Yup.string().required(
-        "Temporary password is required"
-      ),
+      validNIN: urlValidation("Valid NIN"),
+      utilityBill: urlValidation("Utility Bill"),
+      passport: urlValidation("Passport photograph"),
+      employmentLetter: urlValidation("Employment Letter"),
     }),
   ];
 
@@ -298,7 +284,7 @@ export default function AddAgent() {
                 }
               }}
             >
-              {({ validateForm, setTouched, setFieldValue }) => (
+              {({ validateForm, setTouched }) => (
                 <Form className="flex flex-col gap-4">
                   {/* step 1 */}
                   {activeStep === 0 && (
@@ -307,18 +293,18 @@ export default function AddAgent() {
                         name="firstName"
                         type="text"
                         label="First Name"
-                        placeholder="Enter client’s first name"
+                        placeholder="Enter agent's first name"
                       />
 
                       <TextInput
                         name="lastName"
                         type="text"
                         label="Last Name"
-                        placeholder="Enter client’s Last name"
+                        placeholder="Enter agent's last name"
                       />
 
                       <SelectInput name="gender" label="Gender">
-                        <option value="">Select client’s gender</option>
+                        <option value="">Select agent's gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
                       </SelectInput>
@@ -327,7 +313,7 @@ export default function AddAgent() {
                         <label className="font-medium text-gray-900 text-[14px] leading-[145%]">
                           Date of Birth
                         </label>
-                        <Field name="dob">
+                        <Field name="dateOfBirth">
                           {({ field, form }: FieldProps) => (
                             <DatePicker
                               value={field.value || null}
@@ -338,19 +324,17 @@ export default function AddAgent() {
                               slotProps={{
                                 textField: {
                                   fullWidth: true,
-
                                   error: Boolean(
-                                    form.touched.dob && form.errors.dob
+                                    form.touched.dateOfBirth &&
+                                      form.errors.dateOfBirth
                                   ),
-                                  // helperText:
-                                  //   form.touched.dob && form.errors.dob,
                                 },
                               }}
                             />
                           )}
                         </Field>
                         <ErrorMessage
-                          name="dob"
+                          name="dateOfBirth"
                           component="span"
                           className="text-red-500 text-xs"
                         />
@@ -359,37 +343,36 @@ export default function AddAgent() {
                       <TextInput
                         name="email"
                         type="email"
-                        x
                         label="Email Address"
-                        placeholder="Enter client’s email address"
+                        placeholder="Enter agent's email address"
                       />
 
                       <TextInput
                         name="phoneNumber"
                         type="tel"
                         label="Phone Number"
-                        placeholder="Enter client’s phone number"
+                        placeholder="Enter agent's phone number (+234XXXXXXXXXX)"
                       />
 
                       <TextInput
                         name="residentialAddress"
                         type="text"
                         label="Residential Address"
-                        placeholder="Enter client’s residential address"
+                        placeholder="Enter agent's residential address"
                       />
 
                       <TextInput
                         name="stateOfResidence"
                         type="text"
                         label="State of Residence"
-                        placeholder="Enter client’s state of residence"
+                        placeholder="Enter agent's state of residence"
                       />
 
                       <TextInput
-                        name="LGAOfResidence"
+                        name="lgaOfResidence"
                         type="text"
                         label="LGA of Residence"
-                        placeholder="Enter client’s LGA of residence"
+                        placeholder="Enter agent's LGA of residence"
                       />
                     </div>
                   )}
@@ -397,6 +380,20 @@ export default function AddAgent() {
                   {/* step 2 */}
                   {activeStep === 1 && (
                     <div className="space-y-4">
+                      <TextInput
+                        name="bankName"
+                        type="text"
+                        label="Bank Name"
+                        placeholder="Enter bank name"
+                      />
+
+                      <TextInput
+                        name="bankAccount"
+                        type="text"
+                        label="Bank Account Number"
+                        placeholder="Enter bank account number"
+                      />
+
                       <SelectInput
                         name="employmentType"
                         label="Employment Type"
@@ -407,13 +404,14 @@ export default function AddAgent() {
                         <option value="full-time">Full-Time</option>
                         <option value="part-time">Part-Time</option>
                         <option value="contract">Contract</option>
+                        <option value="self-employed">Self-Employed</option>
                       </SelectInput>
 
                       <div className="flex flex-col gap-1 w-full">
                         <label className="font-medium text-gray-900 text-[14px] leading-[145%]">
                           Date of Employment
                         </label>
-                        <Field name="doe">
+                        <Field name="dateOfEmployment">
                           {({ field, form }: FieldProps) => (
                             <DatePicker
                               value={field.value || null}
@@ -425,7 +423,8 @@ export default function AddAgent() {
                                 textField: {
                                   fullWidth: true,
                                   error: Boolean(
-                                    form.touched.doe && form.errors.doe
+                                    form.touched.dateOfEmployment &&
+                                      form.errors.dateOfEmployment
                                   ),
                                 },
                               }}
@@ -433,98 +432,137 @@ export default function AddAgent() {
                           )}
                         </Field>
                         <ErrorMessage
-                          name="doe"
+                          name="dateOfEmployment"
                           component="span"
                           className="text-red-500 text-xs"
                         />
                       </div>
 
-                      <SelectInput name="status" label="Status">
-                        <option value="">Select Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </SelectInput>
+                      <TextInput
+                        name="salaryAmount"
+                        type="number"
+                        label="Salary Amount"
+                        placeholder="Enter salary amount"
+                      />
+
+                      <TextInput
+                        name="password"
+                        type="password"
+                        label="Password"
+                        placeholder="Enter password"
+                      />
+
+                      <TextInput
+                        name="confirmPassword"
+                        type="password"
+                        label="Confirm Password"
+                        placeholder="Confirm password"
+                      />
                     </div>
                   )}
 
                   {/* step 3 */}
                   {activeStep === 2 && (
                     <div className="space-y-4">
-                      <FileDropzone
-                        name="idDocument"
-                        label="Valid ID (NIN, Voter’s ID, etc.)"
-                        accept={{
-                          "image/*": [".jpg", ".jpeg", ".png"],
-                          "application/pdf": [".pdf"],
-                        }}
-                        maxSizeMB={5} // 5 MB max
+                      <Field name="validNIN">
+                        {({ field, form }: FieldProps) => (
+                          <FileUploadWithProgress
+                            label="Valid NIN"
+                            accept="image/*,application/pdf"
+                            maxSizeMB={5}
+                            folder="loan-app/agents"
+                            value={field.value}
+                            onFileUploaded={(url) => {
+                              form.setFieldValue(field.name, url);
+                              form.setFieldTouched(field.name, true);
+                            }}
+                            onUploadError={(error) => {
+                              form.setFieldError(field.name, error);
+                            }}
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage
+                        name="validNIN"
+                        component="span"
+                        className="text-red-500 text-xs"
                       />
 
-                      <FileDropzone
-                        name="addressDocument"
-                        label="Utility Bill / Proof of Address"
-                        accept={{
-                          "image/*": [".jpg", ".jpeg", ".png"],
-                          "application/pdf": [".pdf"],
-                        }}
-                        maxSizeMB={5} // 5 MB max
+                      <Field name="utilityBill">
+                        {({ field, form }: FieldProps) => (
+                          <FileUploadWithProgress
+                            label="Utility Bill"
+                            accept="image/*,application/pdf"
+                            maxSizeMB={5}
+                            folder="loan-app/agents"
+                            value={field.value}
+                            onFileUploaded={(url) => {
+                              form.setFieldValue(field.name, url);
+                              form.setFieldTouched(field.name, true);
+                            }}
+                            onUploadError={(error) => {
+                              form.setFieldError(field.name, error);
+                            }}
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage
+                        name="utilityBill"
+                        component="span"
+                        className="text-red-500 text-xs"
                       />
 
-                      <FileDropzone
-                        name="passportDocument"
-                        label="Passport photograph"
-                        accept={{
-                          "image/*": [".jpg", ".jpeg", ".png"],
-                          "application/pdf": [".pdf"],
-                        }}
-                        maxSizeMB={5} // 5 MB max
+                      <Field name="passport">
+                        {({ field, form }: FieldProps) => (
+                          <FileUploadWithProgress
+                            label="Passport photograph"
+                            accept="image/*,application/pdf"
+                            maxSizeMB={5}
+                            folder="loan-app/agents"
+                            value={field.value}
+                            onFileUploaded={(url) => {
+                              form.setFieldValue(field.name, url);
+                              form.setFieldTouched(field.name, true);
+                            }}
+                            onUploadError={(error) => {
+                              form.setFieldError(field.name, error);
+                            }}
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage
+                        name="passport"
+                        component="span"
+                        className="text-red-500 text-xs"
                       />
-                      <FileDropzone
+
+                      <Field name="employmentLetter">
+                        {({ field, form }: FieldProps) => (
+                          <FileUploadWithProgress
+                            label="Employment Letter"
+                            accept="image/*,application/pdf"
+                            maxSizeMB={5}
+                            folder="loan-app/agents"
+                            value={field.value}
+                            onFileUploaded={(url) => {
+                              form.setFieldValue(field.name, url);
+                              form.setFieldTouched(field.name, true);
+                            }}
+                            onUploadError={(error) => {
+                              form.setFieldError(field.name, error);
+                            }}
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage
                         name="employmentLetter"
-                        label="Employment Letter"
-                        accept={{
-                          "image/*": [".jpg", ".jpeg", ".png"],
-                          "application/pdf": [".pdf"],
-                        }}
-                        maxSizeMB={5} // 5 MB max
+                        component="span"
+                        className="text-red-500 text-xs"
                       />
                     </div>
                   )}
 
                   {activeStep === 3 && (
-                    <div className="space-y-4">
-                      <TextInput
-                        name="email"
-                        type="text"
-                        label="Login Email"
-                        disabled
-                      />
-
-                      <div className="flex items-center sm:gap-10 gap-0 flex-col sm:flex-row justify-center">
-                        <TextInput
-                          name="temporaryPassword"
-                          type="text"
-                          label="Temporary Password"
-                          placeholder="auto-generated, can be reset later"
-                          disabled
-                        />
-
-                        <Button
-                          width="sm:mt-5 mt-2 w-full sm:w-fit h-14"
-                          onClick={() =>
-                            setFieldValue(
-                              "temporaryPassword",
-                              generatePassword(12)
-                            )
-                          }
-                        >
-                          Generate Password
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeStep === 4 && (
                     <ReviewAgentInfo setActiveStep={setActiveStep} />
                   )}
 

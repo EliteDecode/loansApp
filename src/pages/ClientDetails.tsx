@@ -17,6 +17,10 @@ import type { RootState } from "@/store";
 import { getDirectorProfile } from "@/services/features/director/directorService";
 import { getManagerProfile } from "@/services/features/manager/managerService";
 import { getAgentProfile } from "@/services/features/agent/agentService";
+import SuccessModal from "@/components/modals/SuccessModal/SuccessModal";
+import ErrorModal from "@/components/modals/ErrorModal/ErrorModal";
+import ConfirmationModal from "@/components/modals/ConfirmationModal/ConfirmationModal";
+import { useClientSuspendHook } from "@/hooks";
 
 // Loan interface based on the API response
 interface Loan {
@@ -97,6 +101,20 @@ export default function ClientDetails() {
 
   // Get user role from Redux
   const { role } = useSelector((state: RootState) => state.auth);
+
+  // Use the client suspend hook
+  const {
+    isSuspending,
+    showConfirmationModal,
+    showSuccessModal,
+    showErrorModal,
+    errorMessage,
+    handleSuspendClick,
+    handleConfirmSuspend,
+    handleConfirmationClose,
+    handleSuccessModalClose,
+    handleErrorModalClose,
+  } = useClientSuspendHook();
 
   // Fetch current user profile
   useEffect(() => {
@@ -348,8 +366,14 @@ export default function ClientDetails() {
                 height="h-[55px]"
                 width="lg:w-[205px] w-full"
                 variant="warning"
+                onClick={handleSuspendClick}
+                disabled={isSuspending}
               >
-                Suspend Client
+                {isSuspending
+                  ? "Processing..."
+                  : client?.status === "suspended"
+                  ? "Activate Client"
+                  : "Suspend Client"}
               </Button>
             ) : (
               <Button
@@ -361,13 +385,15 @@ export default function ClientDetails() {
               </Button>
             )}
 
-            <Button
-              height="h-[55px]"
-              width="lg:w-[205px] w-full"
-              variant="outline"
-            >
-              Send Reminder
-            </Button>
+            {client.loans.all.length > 0 && (
+              <Button
+                height="h-[55px]"
+                width="lg:w-[205px] w-full"
+                variant="outline"
+              >
+                Send Reminder
+              </Button>
+            )}
           </div>
         </div>
 
@@ -764,113 +790,211 @@ export default function ClientDetails() {
             {/* Loans Tab */}
             {activeTab === 3 && (
               <div className="space-y-6">
-                {/* Loan Summary */}
-                <div className="border-[0.6px] border-gray-200 rounded-[12px] w-full">
-                  <div className="h-16 flex flex-row gap-2 items-center bg-[#E6EAEF] p-4 rounded-t-[12px]">
-                    <img src={money} alt="money-icon" />
-                    <p className="md:text-[24px] text-[18px] font-semibold leading-[120%] text-gray-600">
-                      Loan Summary
-                    </p>
-                  </div>
+                {client.loans.all.length > 0 ? (
+                  <>
+                    {/* Loan Summary */}
+                    <div className="border-[0.6px] border-gray-200 rounded-[12px] w-full">
+                      <div className="h-16 flex flex-row gap-2 items-center bg-[#E6EAEF] p-4 rounded-t-[12px]">
+                        <img src={money} alt="money-icon" />
+                        <p className="md:text-[24px] text-[18px] font-semibold leading-[120%] text-gray-600">
+                          Loan Summary
+                        </p>
+                      </div>
 
-                  <div className="space-y-4 pb-4 p-4">
-                    <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
-                      <p className="w-full max-w-[130px] text-wrap font-medium">
-                        Total Loans:
-                      </p>
-                      <p>{client.loans.summary.totalLoans}</p>
+                      <div className="space-y-4 pb-4 p-4">
+                        <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
+                          <p className="w-full max-w-[130px] text-wrap font-medium">
+                            Total Loans:
+                          </p>
+                          <p>{client.loans.summary.totalLoans}</p>
+                        </div>
+
+                        <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
+                          <p className="w-full max-w-[130px] text-wrap font-medium">
+                            Active Loans:
+                          </p>
+                          <p>{client.loans.summary.totalActiveLoans}</p>
+                        </div>
+
+                        <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
+                          <p className="w-full max-w-[130px] text-wrap font-medium">
+                            Total Loan Amount:
+                          </p>
+                          <p>
+                            {formatCurrency(
+                              client.loans.summary.totalLoanAmount
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
+                          <p className="w-full max-w-[130px] text-wrap font-medium">
+                            Total Repayment:
+                          </p>
+                          <p>
+                            {formatCurrency(
+                              client.loans.summary.totalRepaymentAmount
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
+                          <p className="w-full max-w-[130px] text-wrap font-medium">
+                            Monthly Payment:
+                          </p>
+                          <p>
+                            {formatCurrency(
+                              client.loans.summary.paymentSummary.monthly
+                            )}
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
-                      <p className="w-full max-w-[130px] text-wrap font-medium">
-                        Active Loans:
-                      </p>
-                      <p>{client.loans.summary.totalActiveLoans}</p>
+                    {/* Loan History Table */}
+                    <div className="border-[0.6px] border-gray-200 rounded-[12px] w-full">
+                      <div className="h-16 flex flex-row gap-2 items-center bg-[#E6EAEF] p-4 rounded-t-[12px]">
+                        <img src={money} alt="money-icon" />
+                        <p className="md:text-[24px] text-[18px] font-semibold leading-[120%] text-gray-600">
+                          Loan History
+                        </p>
+                      </div>
+
+                      <div className="p-4">
+                        <CustomTable
+                          data={client.loans.all}
+                          columns={loanColumns}
+                          searchable={true}
+                          searchPlaceholder="Search loans by ID, product, or status"
+                          searchFields={["requestID", "status"]}
+                          pagination={true}
+                          pageSize={5}
+                          showPageSizeSelector={true}
+                          pageSizeOptions={[5, 10, 20]}
+                          emptyMessage="No loans found for this client"
+                          loading={false}
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
-                      <p className="w-full max-w-[130px] text-wrap font-medium">
-                        Total Loan Amount:
-                      </p>
-                      <p>
-                        {formatCurrency(client.loans.summary.totalLoanAmount)}
-                      </p>
-                    </div>
+                    {/* Credit Agent Feedback or Agent Notes */}
+                    {role === "creditAgent" ? (
+                      <div className="border-[0.6px] border-gray-200 rounded-[12px] w-full">
+                        <div className="h-16 flex flex-row gap-2 items-center bg-[#E6EAEF] p-4 rounded-t-[12px]">
+                          <img src={receipt} alt="money-icon" />
+                          <p className="md:text-[24px] text-[18px] font-semibold leading-[120%] text-gray-600">
+                            Credit Agents Feedback
+                          </p>
+                        </div>
 
-                    <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
-                      <p className="w-full max-w-[130px] text-wrap font-medium">
-                        Total Repayment:
-                      </p>
-                      <p>
-                        {formatCurrency(
-                          client.loans.summary.totalRepaymentAmount
-                        )}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
-                      <p className="w-full max-w-[130px] text-wrap font-medium">
-                        Monthly Payment:
-                      </p>
-                      <p>
-                        {formatCurrency(
-                          client.loans.summary.paymentSummary.monthly
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Loan History Table */}
-                <div className="border-[0.6px] border-gray-200 rounded-[12px] w-full">
-                  <div className="h-16 flex flex-row gap-2 items-center bg-[#E6EAEF] p-4 rounded-t-[12px]">
-                    <img src={money} alt="money-icon" />
-                    <p className="md:text-[24px] text-[18px] font-semibold leading-[120%] text-gray-600">
-                      Loan History
-                    </p>
-                  </div>
-
-                  <div className="p-4">
-                    <CustomTable
-                      data={client.loans.all}
-                      columns={loanColumns}
-                      searchable={true}
-                      searchPlaceholder="Search loans by ID, product, or status"
-                      searchFields={["requestID", "status"]}
-                      pagination={true}
-                      pageSize={5}
-                      showPageSizeSelector={true}
-                      pageSizeOptions={[5, 10, 20]}
-                      emptyMessage="No loans found for this client"
-                      loading={false}
-                    />
-                  </div>
-                </div>
-
-                {/* Credit Agent Feedback or Agent Notes */}
-                {role === "creditAgent" ? (
+                        <div className="py-6 px-4 text-[16px] leading-[145%] text-gray-700">
+                          Client is very cooperative and has excellent payment
+                          history. Recommended for higher loan amounts in future
+                          applications.
+                        </div>
+                      </div>
+                    ) : (
+                      <AgentNotesForm />
+                    )}
+                  </>
+                ) : (
+                  /* No Loans State */
                   <div className="border-[0.6px] border-gray-200 rounded-[12px] w-full">
                     <div className="h-16 flex flex-row gap-2 items-center bg-[#E6EAEF] p-4 rounded-t-[12px]">
-                      <img src={receipt} alt="money-icon" />
+                      <img src={money} alt="money-icon" />
                       <p className="md:text-[24px] text-[18px] font-semibold leading-[120%] text-gray-600">
-                        Credit Agents Feedback
+                        Loan Information
                       </p>
                     </div>
 
-                    <div className="py-6 px-4 text-[16px] leading-[145%] text-gray-700">
-                      Client is very cooperative and has excellent payment
-                      history. Recommended for higher loan amounts in future
-                      applications.
+                    <div className="py-12 px-4 text-center">
+                      <div className="text-gray-500 mb-4">
+                        <svg
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No loans by this user
+                      </h3>
+                      <p className="text-gray-500 mb-6">
+                        This client has not applied for any loans yet.
+                      </p>
+                      <Button
+                        variant="success"
+                        onClick={() =>
+                          navigate(`/loan-requests?clientId=${client._id}`)
+                        }
+                        className="px-6"
+                      >
+                        Add Loan
+                      </Button>
                     </div>
                   </div>
-                ) : (
-                  <AgentNotesForm />
                 )}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        open={showConfirmationModal}
+        onClose={handleConfirmationClose}
+        onConfirm={() =>
+          client && handleConfirmSuspend(client._id, client.status)
+        }
+        title={
+          client?.status === "suspended" ? "Activate Client" : "Suspend Client"
+        }
+        message={
+          client?.status === "suspended"
+            ? "Are you sure you want to activate this client? This will restore their access to the system."
+            : "Are you sure you want to suspend this client? This will restrict their access to the system."
+        }
+        confirmText={client?.status === "suspended" ? "Activate" : "Suspend"}
+        cancelText="Cancel"
+        variant="warning"
+        loading={isSuspending}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        open={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title={
+          client?.status === "suspended"
+            ? "Client Activated Successfully!"
+            : "Client Suspended Successfully!"
+        }
+        message={
+          client?.status === "suspended"
+            ? "The client has been activated and can now access the system."
+            : "The client has been suspended and their access has been restricted."
+        }
+        confirmText="OK"
+        onConfirm={handleSuccessModalClose}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        open={showErrorModal}
+        onClose={handleErrorModalClose}
+        message={errorMessage}
+        showRetry={true}
+        retryText="Try Again"
+        onRetry={handleErrorModalClose}
+      />
     </div>
   );
 }

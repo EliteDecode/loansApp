@@ -12,11 +12,17 @@ export { useAgentLoginHook } from "./useAgentLoginHook";
 export type { LoginValues as AgentLoginValues } from "./useAgentLoginHook";
 
 // Client hooks
-export { useClientAddHook } from "./useClientAddHook";
-export type { ClientFormValues, UseClientAddReturn } from "./useClientAddHook";
+export { useClientAddHook } from "./useClientAddHook/useClientAddHook";
+export type {
+  ClientFormValues,
+  UseClientAddReturn,
+} from "./useClientAddHook/useClientAddHook";
 
-export { useClientEditHook } from "./useClientEditHook";
-export type { UseClientEditReturn } from "./useClientEditHook";
+export { useClientEditHook } from "./useClientEditHook/useClientEditHook";
+export type { UseClientEditReturn } from "./useClientEditHook/useClientEditHook";
+
+export { useClientSuspendHook } from "./useClientSuspendHook/useClientSuspendHook";
+export type { UseClientSuspendReturn } from "./useClientSuspendHook/useClientSuspendHook";
 
 // Helper functions
 export * from "./helpers";

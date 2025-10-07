@@ -1,324 +1,335 @@
-import { useNavigate, useSearchParams } from "react-router-dom";
-import LoanMetricsCard from "@/components/LoanMetricsCard/LoanMetricsCard";
 import PageHeader from "@/components/PageHeader/PageHeader";
-import infoHexagon from "@/assets/icons/info-hexagon.svg";
-import verifiedGreen from "@/assets/icons/verifiedGreen.svg";
-import blueMoney from "@/assets/icons/blue-money.svg";
-import warning from "@/assets/icons/info-triangle-red.svg";
-import SelectInput from "@/components/SelectInput/SelectInput";
-import { ErrorMessage, Field, Form, Formik, type FieldProps } from "formik";
-import { Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import type { RootState } from "@/store";
+import {
+  getAllLoanRequests,
+  getMyLoanRequests,
+} from "@/services/features/loanRequest/loanRequestService";
+import CustomTable from "@/components/CustomTable/CustomTable";
+import type { CustomTableColumn } from "@/components/CustomTable/CustomTable.types";
+import Button from "@/components/Button/Button";
 
-// ✅ MUI Date Imports
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import dayjs from "dayjs";
-import { useState } from "react";
-import { Tab, Tabs } from "@mui/material";
-import AllLoan from "@/components/ui/AllLoan";
-import PendingApprovals from "@/components/ui/PendingApprovals";
-import Defaults from "@/components/ui/Defaults";
+// Loan Request interface based on the API response
+interface LoanRequest {
+  _id: string;
+  requestID: string;
+  clientId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+  };
+  loanProductId: {
+    _id: string;
+    productName: string;
+    interestRate: number;
+    minLoanAmount: number;
+    maxLoanAmount: number;
+  };
+  loanAmount: number;
+  loanTenure: number;
+  tenureUnit: string;
+  repaymentFrequency: string;
+  repaymentStartDate: string;
+  loanPurpose: string;
+  clientAccountNumber: string;
+  clientBankName: string;
+  collateralDescription: string;
+  supportingDocuments: string[];
+  status: string;
+  createdBy: string;
+  createdByRole: string;
+  createdByModel: string;
+  interestRate: number;
+  penaltyRate: number;
+  gracePeriod: number;
+  totalInterestAmount: number;
+  paymentAmount: number;
+  totalPayments: number;
+  totalRepaymentAmount: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function Loans() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [value, setValue] = useState(0);
+  const { role } = useSelector((state: RootState) => state.auth);
+  const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
 
-  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
+  // Fetch loan requests based on user role and active tab
+  useEffect(() => {
+    const fetchLoanRequests = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        let response;
+        if (role === "creditAgent") {
+          response = await getMyLoanRequests();
+        } else {
+          // Directors and Managers can switch between "My" and "All" loan requests
+          if (activeTab === 0) {
+            response = await getMyLoanRequests();
+          } else {
+            response = await getAllLoanRequests();
+          }
+        }
+
+        if (response.success) {
+          setLoanRequests(response.data.loanRequests);
+        } else {
+          setError(response.message || "Failed to fetch loan requests");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLoanRequests();
+  }, [role, activeTab]);
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+      minimumFractionDigits: 0,
+    }).format(amount);
   };
 
-  const tabs = ["All Loans", "Pending approvals", "Defaults"];
-
-  // Hydrate initial values from URL
-  const initialValues = {
-    status: searchParams.get("status") || "",
-    agents: searchParams.get("agents") || "",
-    amount: searchParams.get("amount") || "",
-    tenure: searchParams.get("tenure") || "",
-    startDate: searchParams.get("startDate") || "",
-    endDate: searchParams.get("endDate") || "",
-    search: searchParams.get("search") || "",
-  };
-
-  // Helper to update URL when filters change
-  const updateUrl = (values: typeof initialValues) => {
-    const query = new URLSearchParams();
-
-    Object.entries(values).forEach(([key, value]) => {
-      if (value) query.set(key, value);
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-NG", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
+  };
 
-    navigate(`/loans?${query.toString()}`);
+  // Table columns
+  const columns: CustomTableColumn<LoanRequest>[] = [
+    {
+      header: "CLIENT",
+      accessor: "clientId",
+      sortable: true,
+      width: "200px",
+      render: (value: any, row: LoanRequest) => (
+        <div>
+          <div className="font-medium text-gray-900">
+            {value.firstName} {value.lastName}
+          </div>
+          <div className="text-sm text-gray-500">{value.phoneNumber}</div>
+          <div className="text-xs text-gray-400 font-mono">{row.requestID}</div>
+        </div>
+      ),
+    },
+    {
+      header: "LOAN PRODUCT",
+      accessor: "loanProductId",
+      sortable: true,
+      width: "180px",
+      render: (value: any) => (
+        <div>
+          <div className="font-medium text-gray-900">{value.productName}</div>
+          <div className="text-sm text-gray-500">
+            {value.interestRate}% interest
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: "LOAN AMOUNT",
+      accessor: "loanAmount",
+      sortable: true,
+      width: "140px",
+      render: (value: number) => (
+        <span className="font-medium text-gray-900">
+          {formatCurrency(value)}
+        </span>
+      ),
+    },
+    {
+      header: "TENURE",
+      accessor: "loanTenure",
+      sortable: true,
+      width: "120px",
+      render: (value: number, row: LoanRequest) => (
+        <span className="text-gray-700">
+          {value} {row.tenureUnit}
+        </span>
+      ),
+    },
+    {
+      header: "REPAYMENT",
+      accessor: "totalRepaymentAmount",
+      sortable: true,
+      width: "160px",
+      render: (value: number, row: LoanRequest) => (
+        <div>
+          <div className="font-medium text-gray-900">
+            {formatCurrency(value)}
+          </div>
+          <div className="text-sm text-gray-500 capitalize">
+            {row.repaymentFrequency}
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: "STATUS",
+      accessor: "status",
+      sortable: true,
+      width: "120px",
+      render: (value: string) => (
+        <span
+          className={`px-2 py-1 text-[12px] leading-[145%] rounded-[12px] font-medium ${
+            {
+              approved: "bg-[#0F973D1A] text-[#0F973D]",
+              pending: "bg-[#F3A2181A] text-[#F3A218]",
+              rejected: "bg-[#CB1A141A] text-[#CB1A14]",
+              active: "bg-[#0088FF1A] text-[#0088FF]",
+              completed: "bg-[#0F973D1A] text-[#0F973D]",
+              overdue: "bg-[#CB1A141A] text-[#CB1A14]",
+            }[value.toLowerCase()] || "bg-gray-100 text-gray-600"
+          }`}
+        >
+          {value.charAt(0).toUpperCase() + value.slice(1)}
+        </span>
+      ),
+    },
+    {
+      header: "CREATED DATE",
+      accessor: "createdAt",
+      sortable: true,
+      width: "120px",
+      render: (value: string) => (
+        <span className="text-sm text-gray-600">{formatDate(value)}</span>
+      ),
+    },
+    {
+      header: "ACTIONS",
+      accessor: "_id",
+      sortable: false,
+      width: "120px",
+      render: (value: string, row: LoanRequest) => (
+        <Button
+          variant="outline"
+          height="h-8"
+          width="w-24"
+          onClick={() => navigate(`/loans/${row.requestID}`)}
+        >
+          View Details
+        </Button>
+      ),
+    },
+  ];
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader
+          title="Loan Requests"
+          subtitle="Manage and track loan applications"
+        />
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div>
+        <PageHeader
+          title="Loan Requests"
+          subtitle="Manage and track loan applications"
+        />
+        <div className="text-center py-8">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Get dynamic title based on role and active tab
+  const getPageTitle = () => {
+    if (role === "creditAgent") {
+      return "My Loan Requests";
+    }
+    return activeTab === 0 ? "My Loan Requests" : "All Loan Requests";
   };
 
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
-        title="Loans"
-        subtitle="Manage and track all loan applications"
+        title={getPageTitle()}
+        subtitle="Manage and track loan applications"
       />
 
-      {/* Top Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        <LoanMetricsCard
-          title="Pending Approvals"
-          value="32"
-          icon={infoHexagon}
-          iconBg="#FF8D281A"
-        />
-        <LoanMetricsCard
-          title="Approved Loans"
-          value="189"
-          icon={verifiedGreen}
-          iconBg="#20C9971A"
-        />
-        <LoanMetricsCard
-          title="Disbursed Loans"
-          value="95"
-          icon={blueMoney}
-          iconBg="#0088FF1A"
-        />
-        <LoanMetricsCard
-          title="Defaulted"
-          value="10"
-          icon={warning}
-          iconBg="#FF8D281A"
-        />
-      </div>
+      <div className="p-4 md:p-6 bg-white rounded-[12px]">
+        {/* Role-based tabs for Directors and Managers */}
+        {(role === "director" || role === "manager") && (
+          <div className="mb-6">
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab(0)}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 0
+                    ? "border-primary text-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                My Loan Requests
+              </button>
+              <button
+                onClick={() => setActiveTab(1)}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 1
+                    ? "border-primary text-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                All Loan Requests
+              </button>
+            </div>
+          </div>
+        )}
 
-      {/* Filters */}
-      <div className="bg-white p-6 rounded-xl">
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <Formik
-            enableReinitialize
-            initialValues={initialValues}
-            onSubmit={() => {}} // no normal submit
-          >
-            {({ values, setFieldValue }) => (
-              <Form className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <SelectInput
-                    name="status"
-                    label="Status"
-                    onChange={(e: any) => {
-                      setFieldValue("status", e.target.value);
-                      updateUrl({ ...values, status: e.target.value });
-                    }}
-                  >
-                    <option value="">All Statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="disbursed">Disbursed</option>
-                    <option value="defaulted">Defaulted</option>
-                  </SelectInput>
-
-                  <SelectInput
-                    name="agents"
-                    label="Agents"
-                    onChange={(e: any) => {
-                      setFieldValue("agents", e.target.value);
-                      updateUrl({ ...values, agents: e.target.value });
-                    }}
-                  >
-                    <option value="">All Agents</option>
-                    <option value="john">John</option>
-                    <option value="jane">Jane</option>
-                  </SelectInput>
-
-                  <SelectInput
-                    name="amount"
-                    label="Amount Range"
-                    onChange={(e: any) => {
-                      setFieldValue("amount", e.target.value);
-                      updateUrl({ ...values, amount: e.target.value });
-                    }}
-                  >
-                    <option value="">Amount Range</option>
-                    <option value="0-1000">$0 - $1000</option>
-                    <option value="1000-5000">$1000 - $5000</option>
-                    <option value="5000+">$5000+</option>
-                  </SelectInput>
-
-                  <SelectInput
-                    name="tenure"
-                    label="Tenure"
-                    onChange={(e: any) => {
-                      setFieldValue("tenure", e.target.value);
-                      updateUrl({ ...values, tenure: e.target.value });
-                    }}
-                  >
-                    <option value="">All Tenures</option>
-                    <option value="3m">3 Months</option>
-                    <option value="6m">6 Months</option>
-                    <option value="12m">12 Months</option>
-                  </SelectInput>
-
-                  <div className="flex flex-col gap-0 w-full">
-                    <label className="font-medium text-gray-900 text-[14px] leading-[145%]">
-                      Start Date
-                    </label>
-                    <Field name="startDate">
-                      {({ field, form }: FieldProps) => (
-                        <DatePicker
-                          value={field.value ? dayjs(field.value) : null}
-                          onChange={(val, _context) => {
-                            const formatted = val
-                              ? dayjs(val).format("YYYY-MM-DD")
-                              : "";
-                            form.setFieldValue(field.name, formatted);
-                            updateUrl({
-                              ...form.values,
-                              [field.name]: formatted,
-                            });
-                          }}
-                          slotProps={{
-                            textField: {
-                              fullWidth: true,
-                              error: Boolean(
-                                form.touched.startDate && form.errors.startDate
-                              ),
-                            },
-                          }}
-                        />
-                      )}
-                    </Field>
-                    <ErrorMessage
-                      name="startDate"
-                      component="span"
-                      className="text-red-500 text-xs"
-                    />
-                  </div>
-
-                  {/* End Date */}
-                  <div className="flex flex-col gap-0 w-full">
-                    <label className="font-medium text-gray-900 text-[14px] leading-[145%]">
-                      End Date
-                    </label>
-                    <Field name="endDate">
-                      {({ field, form }: FieldProps) => (
-                        <DatePicker
-                          value={field.value ? dayjs(field.value) : null}
-                          onChange={(val, _context) => {
-                            const formatted = val
-                              ? dayjs(val).format("YYYY-MM-DD")
-                              : "";
-                            form.setFieldValue(field.name, formatted);
-                            updateUrl({
-                              ...form.values,
-                              [field.name]: formatted,
-                            });
-                          }}
-                          slotProps={{
-                            textField: {
-                              fullWidth: true,
-                              error: Boolean(
-                                form.touched.endDate && form.errors.endDate
-                              ),
-                            },
-                          }}
-                        />
-                      )}
-                    </Field>
-                    <ErrorMessage
-                      name="endDate"
-                      component="span"
-                      className="text-red-500 text-xs"
-                    />
-                  </div>
-                </div>
-
-                {/* Search Input */}
-                <div className="w-full relative">
-                  <input
-                    placeholder="Search by Client Name, Loan ID, or Phone Number..."
-                    className="h-10 w-full pl-10 pr-3 outline-0 bg-[#F9FAFB] shadow-[0px_1px_2px_0px_#1018280D] rounded-[6px] text-[14px] leading-[145%] placeholder:text-[#667185]"
-                    value={values.search}
-                    onChange={(e) => {
-                      setFieldValue("search", e.target.value);
-                      updateUrl({ ...values, search: e.target.value });
-                    }}
-                  />
-                  <Search
-                    className="absolute top-2 left-3 w-5 h-5"
-                    color="#475367"
-                  />
-                </div>
-              </Form>
-            )}
-          </Formik>
-        </LocalizationProvider>
-      </div>
-
-      <div className="bg-white p-6 rounded-xl space-y-6">
-        <h1 className="text-[24px] leading-[120%] tracking-[-2%] font-medium text-gray-700">
-          Loan Applications
-        </h1>
-
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          variant="scrollable" // ✅ allow horizontal scrolling
-          scrollButtons="auto"
-          sx={{
-            mb: "25px",
-            "& .MuiTab-root": {
-              textTransform: "none",
-              height: 41,
-              minWidth: "fit-content", // ✅ shrink to fit content
-              px: 2, // ✅ 16px left/right padding (MUI spacing: 2 = 16px)
-              paddingY: 0, // keep height tight
-
-              "@media (min-width:600px)": {
-                height: 52,
-              },
-            },
-
-            "& .MuiTabs-flexContainer": {
-              gap: "16px", // ✅ spacing between each Tab
-            },
-
-            "& .MuiTabs-indicator": { display: "none" }, // hide underline if you want bg active
+        {/* Custom Table */}
+        <CustomTable
+          data={loanRequests}
+          columns={columns}
+          searchable={true}
+          searchPlaceholder="Search by request ID, client name, or status"
+          searchFields={["requestID", "status"]}
+          pagination={true}
+          pageSize={10}
+          showPageSizeSelector={true}
+          pageSizeOptions={[5, 10, 20, 50]}
+          emptyMessage="No loan requests found"
+          loading={isLoading}
+          onRowClick={(row) => {
+            // TODO: Navigate to loan request details
+            console.log("Navigate to loan request:", row._id);
           }}
-          className="space-y-10"
-        >
-          {tabs.map((tab, index) => (
-            <Tab
-              key={index}
-              label={
-                <div className="flex items-center gap-2 text-[14px] leading-[145%] font-medium">
-                  <span className="tab-text">{tab}</span>
-                </div>
-              }
-              sx={{
-                textTransform: "none",
-                minWidth: "fit-content", // ✅ don’t force extra width
-                px: 2, // ✅ 16px left/right padding
-                py: 0,
-
-                "& .tab-text": {
-                  color: "#344054", // default
-                  whiteSpace: "nowrap", // ✅ prevents breaking text
-                },
-
-                "&.Mui-selected .tab-text": {
-                  color: "#002D62",
-                },
-
-                "&.Mui-selected": {
-                  color: "#002D62",
-                  borderBottom: "1px solid #002D62",
-                  bgcolor: "#E6EAEF",
-                },
-              }}
-            />
-          ))}
-        </Tabs>
-
-        {value === 0 && <AllLoan />}
-        {value === 1 && <PendingApprovals />}
-        {value === 2 && <Defaults />}
+        />
       </div>
     </div>
   );

@@ -8,23 +8,26 @@ import pdf from "@/assets/icons/pdf.svg"; // adjust path
 interface AgentFormValues {
   firstName: string;
   lastName: string;
-  gender: string;
-  dob: string | Date | null;
+  gender: "male" | "female";
+  dateOfBirth: string | Date | null;
   email: string;
   phoneNumber: string;
   residentialAddress: string;
   stateOfResidence: string;
-  LGAOfResidence: string;
-  employmentType: string;
-  doe: string | Date | null;
-  status: string;
-  temporaryPassword: string;
+  lgaOfResidence: string;
+  bankName: string;
+  bankAccount: string;
+  employmentType: "full-time" | "part-time" | "contract" | "self-employed";
+  dateOfEmployment: string | Date | null;
+  password: string;
+  confirmPassword: string;
+  salaryAmount: string | number;
 
   // file uploads
-  idDocument?: File | null;
-  addressDocument?: File | null;
-  passportDocument?: File | null;
-  employmentLetter?: File | null;
+  validNIN?: string;
+  utilityBill?: string;
+  passport?: string;
+  employmentLetter?: string;
 }
 
 interface ReviewAgentInfoProps {
@@ -44,6 +47,12 @@ export default function ReviewAgentInfo({
       : "-";
   };
 
+  const formatCurrency = (amount: string | number): string => {
+    if (!amount) return "-";
+    const num = typeof amount === "string" ? parseFloat(amount) : amount;
+    return isNaN(num) ? "-" : `₦${num.toLocaleString()}`;
+  };
+
   const InfoRow = ({ label, value }: { label: string; value?: string }) => (
     <div className="text-[16px] leading-[145%] text-gray-500 max-w-[300px] w-full">
       <p>{label}</p>
@@ -53,9 +62,9 @@ export default function ReviewAgentInfo({
 
   // Map file fields to labels
   const documents = [
-    { key: "idDocument", label: "Valid ID" },
-    { key: "addressDocument", label: "Proof of Address" },
-    { key: "passportDocument", label: "Passport Photograph" },
+    { key: "validNIN", label: "Valid NIN" },
+    { key: "utilityBill", label: "Utility Bill" },
+    { key: "passport", label: "Passport Photograph" },
     { key: "employmentLetter", label: "Employment Letter" },
   ] as const;
 
@@ -84,7 +93,10 @@ export default function ReviewAgentInfo({
           <InfoRow label="First Name" value={values.firstName} />
           <InfoRow label="Last Name" value={values.lastName} />
           <InfoRow label="Gender" value={values.gender} />
-          <InfoRow label="Date of Birth" value={formatDate(values.dob)} />
+          <InfoRow
+            label="Date of Birth"
+            value={formatDate(values.dateOfBirth)}
+          />
           <InfoRow label="Email Address" value={values.email} />
           <InfoRow label="Phone Number" value={values.phoneNumber} />
           <InfoRow
@@ -92,7 +104,7 @@ export default function ReviewAgentInfo({
             value={values.residentialAddress}
           />
           <InfoRow label="State of Residence" value={values.stateOfResidence} />
-          <InfoRow label="LGA of Residence" value={values.LGAOfResidence} />
+          <InfoRow label="LGA of Residence" value={values.lgaOfResidence} />
         </div>
       </div>
 
@@ -112,9 +124,17 @@ export default function ReviewAgentInfo({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+          <InfoRow label="Bank Name" value={values.bankName} />
+          <InfoRow label="Bank Account" value={values.bankAccount} />
           <InfoRow label="Employment Type" value={values.employmentType} />
-          <InfoRow label="Date of Employment" value={formatDate(values.doe)} />
-          <InfoRow label="Status" value={values.status} />
+          <InfoRow
+            label="Date of Employment"
+            value={formatDate(values.dateOfEmployment)}
+          />
+          <InfoRow
+            label="Salary Amount"
+            value={formatCurrency(values.salaryAmount)}
+          />
         </div>
       </div>
 
@@ -133,7 +153,7 @@ export default function ReviewAgentInfo({
 
         <div className="space-y-4">
           {documents.map((doc) => {
-            const file = values[doc.key];
+            const fileUrl = values[doc.key];
             return (
               <div
                 key={doc.key}
@@ -143,38 +163,24 @@ export default function ReviewAgentInfo({
                   <img src={pdf} />
                   <p className="text-[16px] text-gray-400">{doc.label}</p>
                 </div>
-                {file ? (
-                  <img src={check} />
+                {fileUrl ? (
+                  <div className="flex items-center gap-2">
+                    <img src={check} />
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 text-sm hover:underline"
+                    >
+                      View
+                    </a>
+                  </div>
                 ) : (
                   <span className="text-gray-400">Not Uploaded</span>
                 )}
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* SYSTEM ACCESS */}
-      <div className="bg-white p-6 rounded-xl space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[20px] font-medium text-gray-600">
-            System Access
-          </h2>
-          <Button
-            icon={<img src={edit} />}
-            variant="outline"
-            onClick={() => setActiveStep(3)}
-          >
-            Edit
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-          <InfoRow label="Login Email" value={values.email} />
-          <InfoRow
-            label="Temporary Password"
-            value={values.temporaryPassword}
-          />
         </div>
       </div>
     </div>

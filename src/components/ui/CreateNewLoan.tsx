@@ -1,118 +1,100 @@
 import { ErrorMessage, Field, Form, Formik, type FieldProps } from "formik";
 import { useEffect, useState } from "react";
-import SearchSelect from "./SearchSelect";
+import { useNavigate } from "react-router-dom";
 import TextInput from "../TextInput/TextInput";
 import FormSelect from "../FormSelect/FormSelect";
+import SearchableSelect from "../SearchableSelect/SearchableSelect";
 import Button from "../Button/Button";
 import dropDown from "@/assets/icons/dropDown.svg";
 import * as Yup from "yup";
 import moneyIcon from "@/assets/icons/money-1.svg";
 import add from "@/assets/icons/add.svg";
-import draft from "@/assets/icons/draft.svg";
 import { DatePicker } from "@mui/x-date-pickers";
-import FileDropzone from "../FileDropzone/FileDropzone";
+import FileUploadWithProgress from "../FileUploadWithProgress/FileUploadWithProgress";
+import type { Client } from "@/services/features/client/client.types";
+import type { LoanProduct } from "@/services/features/loanProduct/loanProduct.types";
+import { createLoanRequest } from "@/services/features/loanRequest/loanRequestService";
+import SuccessModal from "../modals/SuccessModal/SuccessModal";
+import ErrorModal from "../modals/ErrorModal/ErrorModal";
 
-const loanTypes = [
-  {
-    value: "sme",
-    label: "SME Business Growth Loan",
-    collateral: true,
-    interest: 10,
-  }, // 10%
-  { value: "personal", label: "Personal Loan", collateral: false, interest: 8 }, // 8%
-  { value: "car", label: "Car Loan", collateral: true, interest: 12 }, // 12%
-  {
-    value: "education",
-    label: "Education Loan (0% Interest)",
-    collateral: false,
-    interest: 0,
-  }, // 0%
-];
+// Component props interface
+interface CreateNewLoanProps {
+  clients: Client[];
+  loanProducts: LoanProduct[];
+  preselectedClientId?: string | null;
+}
 
-const loanTenureOptions = [
-  { value: "monthly", label: "Monthly" },
-  { value: "yearly", label: "Yearly" },
-];
+// Form values interface
+interface LoanRequestFormValues {
+  clientId: string;
+  loanProductId: string;
+  loanAmount: string | number;
+  loanTenure: string | number;
+  tenureUnit: string;
+  repaymentStartDate: Date | null;
+  loanPurpose: string;
+  clientAccountNumber: string;
+  clientBankName: string;
+  collateralDescription: string;
+  supportingDocuments: string[];
+}
 
-const replaymentOptions = [
-  { value: "daily", label: "Daily" },
-  { value: "monthly", label: "Monthly" },
-  { value: "yearly", label: "Yearly" },
-];
-
-export default function CreateNewLoan() {
+export default function CreateNewLoan({
+  clients,
+  loanProducts,
+  preselectedClientId,
+}: CreateNewLoanProps) {
+  const navigate = useNavigate();
   const [accountName, setAccountName] = useState<string>("");
   const [loadingAccount, setLoadingAccount] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const fetchClients = async (query: string) => {
-    return new Promise<any[]>((resolve) => {
-      setTimeout(() => {
-        const all = [
-          { id: 1, name: "John Yinka", phone: "08123456789" },
-          { id: 2, name: "Jane Smith", phone: "08111112222" },
-          { id: 3, name: "David Johnson", phone: "08199998888" },
-        ];
-        resolve(
-          all.filter(
-            (c) =>
-              c.name.toLowerCase().includes(query.toLowerCase()) ||
-              c.phone.includes(query)
-          )
-        );
-      }, 1000);
-    });
-  };
+  // Get preselected client
+  const preselectedClient = preselectedClientId
+    ? clients.find((client) => client._id === preselectedClientId)
+    : null;
 
-  // ✅ Validation schema with conditional collateral
+  // Validation schema
   const validationSchema = Yup.object({
-    client: Yup.object().nullable().required("Please select a client"),
+    clientId: Yup.string().required("Please select a client"),
+    loanProductId: Yup.string().required("Please select loan product"),
     loanAmount: Yup.number()
       .typeError("Loan amount must be a number")
       .positive("Loan amount must be greater than 0")
       .required("Please enter loan amount"),
-    loanType: Yup.string().required("Please select loan type"),
     loanTenure: Yup.number()
       .typeError("Loan tenure must be a number")
       .positive("Loan tenure must be greater than 0")
       .required("Please enter loan tenure"),
-    loanTenureUnit: Yup.string()
-      .oneOf(["monthly", "yearly"], "Invalid loan tenure unit")
+    tenureUnit: Yup.string()
+      .oneOf(["days", "weeks", "months", "years"], "Invalid tenure unit")
       .required("Please select tenure unit"),
-    ClientsAccountNumber: Yup.string()
+    clientAccountNumber: Yup.string()
       .matches(/^\d{10}$/, "Account number must be 10 digits")
-      .required("Please enter client’s account number"),
-    bankName: Yup.string().required("Please select bank"),
-    accountName: Yup.string().required("Account name is required"), // ✅ added
-    repaymentFrequency: Yup.string()
-      .oneOf(["daily", "monthly", "yearly"], "Invalid repayment frequency")
-      .required("Please select repayment frequency"),
-    interestRate: Yup.number()
-      .typeError("Interest rate must be a number")
-      .min(0, "Interest rate cannot be negative")
-      .max(100, "Interest rate cannot exceed 100%")
-      .required("Interest rate is required"),
-    rsd: Yup.date().nullable().required("Please select repayment start date"),
+      .required("Please enter client's account number"),
+    clientBankName: Yup.string().required("Please select bank"),
+    repaymentStartDate: Yup.date()
+      .nullable()
+      .required("Please select repayment start date")
+      .min(new Date(), "Repayment start date must be in the future"),
     loanPurpose: Yup.string()
       .min(10, "Loan purpose must be at least 10 characters")
       .required("Please provide loan purpose"),
-    collateralDescription: Yup.string().when("loanType", {
-      is: (val: string) =>
-        loanTypes.find((lt) => lt.value === val)?.collateral === true,
+    collateralDescription: Yup.string().when("loanProductId", {
+      is: (val: string) => {
+        const product = loanProducts.find((p) => p._id === val);
+        return product?.requiresCollateral === true;
+      },
       then: (schema) =>
         schema
           .min(10, "Collateral description must be at least 10 characters")
-          .required("Please provide collateral description"),
+          .required("Collateral description cannot be empty"),
       otherwise: (schema) => schema.notRequired(),
     }),
-    Document: Yup.mixed().when("loanType", {
-      is: (val: string) =>
-        loanTypes.find((lt) => lt.value === val)?.collateral === true,
-      then: (schema) =>
-        schema
-          .required("Please upload a supporting document")
-          .test("fileType", "Invalid file", (value) => !!value),
-      otherwise: (schema) => schema.notRequired(),
-    }),
+    supportingDocuments: Yup.array().optional(),
   });
 
   const bankOptions = [
@@ -224,57 +206,103 @@ export default function CreateNewLoan() {
     { label: "Zenith Bank", value: "057", name: "Zenith Bank", code: "057" },
   ];
 
+  // Handle form submission
+  const handleSubmit = async (values: LoanRequestFormValues) => {
+    setIsSubmitting(true);
+    try {
+      const loanData = {
+        clientId: values.clientId,
+        loanProductId: values.loanProductId,
+        loanAmount: Number(values.loanAmount),
+        loanTenure: Number(values.loanTenure),
+        tenureUnit: values.tenureUnit,
+        repaymentStartDate: values.repaymentStartDate?.toISOString() || "",
+        loanPurpose: values.loanPurpose,
+        clientAccountNumber: values.clientAccountNumber,
+        clientBankName: values.clientBankName,
+        collateralDescription: values.collateralDescription,
+        supportingDocuments: values.supportingDocuments,
+      };
+
+      const response = await createLoanRequest(loanData);
+
+      if (response.success) {
+        setShowSuccessModal(true);
+      } else {
+        setErrorMessage(response.message || "Failed to create loan request");
+        setShowErrorModal(true);
+      }
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "An error occurred"
+      );
+      setShowErrorModal(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle success modal close
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    navigate("/loans");
+  };
+
+  // Handle error modal close
+  const handleErrorModalClose = () => {
+    setShowErrorModal(false);
+    setErrorMessage("");
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-[20px] font-medium text-gray-700">Loan Requests</h1>
+      <h1 className="text-[20px] font-medium text-gray-700">
+        Create New Loan Request
+      </h1>
 
       <Formik
         initialValues={{
-          client: null,
+          clientId: preselectedClient?._id || "",
+          loanProductId: "",
           loanAmount: "",
-          loanType: "",
           loanTenure: "",
-          loanTenureUnit: "",
-          ClientsAccountNumber: "",
-          bankName: "",
-          accountName: "", // ✅ added
-          repaymentFrequency: "",
-          interestRate: "",
-          rsd: null,
+          tenureUnit: "",
+          clientAccountNumber: "",
+          clientBankName: "",
+          repaymentStartDate: null,
           loanPurpose: "",
           collateralDescription: "",
-          Document: [],
+          supportingDocuments: [],
         }}
         validationSchema={validationSchema}
-        onSubmit={(values) => {
-          console.log("Form submitted:", values);
-        }}
+        onSubmit={handleSubmit}
       >
         {(formik) => {
-          const selectedLoanType = formik.values.loanType;
-          const loanTypeConfig = loanTypes.find(
-            (l) => l.value === selectedLoanType
+          const selectedLoanProduct = loanProducts.find(
+            (p) => p._id === formik.values.loanProductId
           );
 
-          // Auto-fill interest rate when loanType changes
-          // Auto-fill interest when loan type changes
+          // Auto-fill tenure unit when loan product changes
           useEffect(() => {
-            if (loanTypeConfig) {
-              formik.setFieldValue("interestRate", loanTypeConfig.interest);
+            if (selectedLoanProduct) {
+              formik.setFieldValue(
+                "tenureUnit",
+                selectedLoanProduct.tenureUnit
+              );
             }
-          }, [selectedLoanType]);
+          }, [selectedLoanProduct]);
 
           // Resolve account name when account number + bank selected
           useEffect(() => {
             const fetchAccountName = async () => {
-              const { ClientsAccountNumber, bankName } = formik.values;
-              const bank = bankOptions.find((b) => b.value === bankName);
+              const { clientAccountNumber, clientBankName } = formik.values;
+              const bank = bankOptions.find((b) => b.value === clientBankName);
 
-              if (ClientsAccountNumber?.length === 10 && bank) {
+              if (clientAccountNumber?.length === 10 && bank) {
                 try {
-                  setLoadingAccount(true); // start loading
+                  setLoadingAccount(true);
                   const res = await fetch(
-                    `https://api.paystack.co/bank/resolve?account_number=${ClientsAccountNumber}&bank_code=${bank.code}`,
+                    `https://api.paystack.co/bank/resolve?account_number=${clientAccountNumber}&bank_code=${bank.code}`,
                     {
                       headers: {
                         Authorization: `Bearer ${
@@ -287,33 +315,35 @@ export default function CreateNewLoan() {
                   const data = await res.json();
                   if (data.status) {
                     setAccountName(data.data.account_name);
-                    formik.setFieldValue("accountName", data.data.account_name); // ✅ store in Formik
                   } else {
                     setAccountName("❌ Invalid account details");
-                    formik.setFieldValue("accountName", "");
                   }
                 } catch (err) {
                   setAccountName("⚠️ Error validating account");
-                  formik.setFieldValue("accountName", "");
                 } finally {
-                  setLoadingAccount(false); // stop loading
+                  setLoadingAccount(false);
                 }
               } else {
                 setAccountName("");
-                formik.setFieldValue("accountName", "");
               }
             };
 
             fetchAccountName();
-          }, [formik.values.ClientsAccountNumber, formik.values.bankName]);
+          }, [formik.values.clientAccountNumber, formik.values.clientBankName]);
 
           return (
             <Form className="space-y-6 w-full">
-              <SearchSelect
-                name="client"
+              {/* Client Selection */}
+              <SearchableSelect
+                name="clientId"
                 label="Select Client"
-                placeholder="Search by name or phone number"
-                fetchClients={fetchClients}
+                options={clients.map((client) => ({
+                  value: client._id,
+                  label: `${client.firstName} ${client.lastName} (${client.phoneNumber})`,
+                }))}
+                placeholder="Search and select a client"
+                icon={<img src={dropDown} alt="icon" />}
+                disabled={!!preselectedClient}
               />
 
               {/* Loan Details */}
@@ -325,49 +355,105 @@ export default function CreateNewLoan() {
                   </h1>
                 </div>
 
-                <TextInput
-                  name="loanAmount"
-                  type="tel"
-                  label="Loan Amount"
-                  placeholder="Enter loan amount"
-                  amount={true}
-                />
-
-                <FormSelect
-                  name="loanType"
-                  label="Loan Type"
-                  options={loanTypes}
-                  placeholder="Select Loan Type"
+                <SearchableSelect
+                  name="loanProductId"
+                  label="Loan Product"
+                  options={loanProducts.map((product) => ({
+                    value: product._id,
+                    label: `${product.productName} (${product.interestRate}% interest)`,
+                  }))}
+                  placeholder="Search and select loan product"
                   icon={<img src={dropDown} alt="icon" />}
                 />
 
+                <div className="flex flex-col gap-1 w-full">
+                  <TextInput
+                    name="loanAmount"
+                    type="tel"
+                    label="Loan Amount"
+                    placeholder="Enter loan amount"
+                    amount={true}
+                  />
+                  {selectedLoanProduct && (
+                    <p className="text-xs text-gray-500">
+                      Minimum: ₦
+                      {selectedLoanProduct.minLoanAmount.toLocaleString()} •
+                      Maximum: ₦
+                      {selectedLoanProduct.maxLoanAmount.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+
+                {/* Interest Rate Display (Read-only) */}
+                {selectedLoanProduct && (
+                  <div className="flex flex-col gap-1 w-full">
+                    <label className="text-[14px] font-medium text-gray-900">
+                      Interest Rate
+                    </label>
+                    <div className="h-12 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
+                      <span className="text-sm text-gray-700">
+                        {selectedLoanProduct.interestRate}% per annum
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Interest rate is determined by the selected loan product
+                    </p>
+                  </div>
+                )}
+
+                {/* Repayment Frequency Display (Read-only) */}
+                {selectedLoanProduct && (
+                  <div className="flex flex-col gap-1 w-full">
+                    <label className="text-[14px] font-medium text-gray-900">
+                      Repayment Frequency
+                    </label>
+                    <div className="h-12 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
+                      <span className="text-sm text-gray-700 capitalize">
+                        {selectedLoanProduct.repaymentFrequency}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Repayment frequency is determined by the selected loan
+                      product
+                    </p>
+                  </div>
+                )}
+
                 {/* Loan Tenure */}
-                <div className="flex flex-col md:flex-row gap-2 md:gap-4 items-center">
-                  <div className="md:w-[80%] w-full">
-                    <TextInput
-                      name="loanTenure"
-                      type="tel"
-                      label={
-                        formik.values.loanTenureUnit === "monthly"
-                          ? "Loan Tenure (Months)"
-                          : "Loan Tenure (Years)"
-                      }
-                      placeholder={
-                        formik.values.loanTenureUnit === "monthly"
-                          ? "e.g. 12 months"
-                          : "e.g. 2 years"
-                      }
-                    />
+                <div className="space-y-2">
+                  <div className="flex flex-col md:flex-row gap-2 md:gap-4 items-center">
+                    <div className="md:w-[80%] w-full">
+                      <TextInput
+                        name="loanTenure"
+                        type="tel"
+                        label="Loan Tenure"
+                        placeholder="Enter loan tenure"
+                      />
+                    </div>
+                    <div className="md:w-[20%] w-full">
+                      <FormSelect
+                        name="tenureUnit"
+                        label="."
+                        options={[
+                          { value: "days", label: "Days" },
+                          { value: "weeks", label: "Weeks" },
+                          { value: "months", label: "Months" },
+                          { value: "years", label: "Years" },
+                        ]}
+                        placeholder="Unit"
+                        icon={<img src={dropDown} alt="icon" />}
+                        disabled={!!selectedLoanProduct}
+                      />
+                    </div>
                   </div>
-                  <div className="md:w-[20%] w-full">
-                    <FormSelect
-                      name="loanTenureUnit"
-                      label="."
-                      options={loanTenureOptions}
-                      placeholder="Monthly / Yearly"
-                      icon={<img src={dropDown} alt="icon" />}
-                    />
-                  </div>
+                  {selectedLoanProduct && (
+                    <p className="text-xs text-gray-500">
+                      Minimum: {selectedLoanProduct.minTenure}{" "}
+                      {selectedLoanProduct.tenureUnit} • Maximum:{" "}
+                      {selectedLoanProduct.maxTenure}{" "}
+                      {selectedLoanProduct.tenureUnit}
+                    </p>
+                  )}
                 </div>
 
                 {/* Account Details */}
@@ -375,18 +461,18 @@ export default function CreateNewLoan() {
                   <div className="flex flex-col md:flex-row gap-4 w-full">
                     <div className="md:w-1/2 w-full">
                       <TextInput
-                        name="ClientsAccountNumber"
+                        name="clientAccountNumber"
                         type="tel"
-                        label="Client’s Account Number"
+                        label="Client's Account Number"
                         placeholder="Enter 10-digit account number"
                       />
                     </div>
                     <div className="md:w-1/2 w-full">
-                      <FormSelect
-                        name="bankName"
+                      <SearchableSelect
+                        name="clientBankName"
                         label="Bank Name"
                         options={bankOptions}
-                        placeholder="Select bank"
+                        placeholder="Search and select bank"
                         icon={<img src={dropDown} alt="icon" />}
                       />
                     </div>
@@ -397,54 +483,35 @@ export default function CreateNewLoan() {
                       ? "⏳ Validating account..."
                       : accountName
                       ? `✅ Account Name: ${accountName}`
-                      : "Customer’s name will display here after validation"}
+                      : "Customer's name will display here after validation"}
                   </p>
-                  <ErrorMessage
-                    name="accountName"
-                    component="p"
-                    className="text-red-500 text-sm"
-                  />
                 </div>
-
-                <FormSelect
-                  name="repaymentFrequency"
-                  label="Repayment Frequency"
-                  options={replaymentOptions}
-                  placeholder="Monthly"
-                  icon={<img src={dropDown} alt="icon" />}
-                />
-
-                {/* Interest Rate (Auto-filled & Disabled) */}
-                <TextInput
-                  name="interestRate"
-                  type="number"
-                  label="Interest Rate (%)"
-                  disabled
-                  value={formik.values.interestRate}
-                />
 
                 {/* Repayment Start Date */}
                 <div className="flex flex-col gap-1 w-full">
                   <label className="font-medium text-gray-900">
                     Repayment Start Date
                   </label>
-                  <Field name="rsd">
+                  <Field name="repaymentStartDate">
                     {({ field, form }: FieldProps) => (
                       <DatePicker
                         value={field.value || null}
                         onChange={(val) => form.setFieldValue(field.name, val)}
-                        disableFuture
+                        disablePast
                         slotProps={{
                           textField: {
                             fullWidth: true,
-                            error: Boolean(form.touched.rsd && form.errors.rsd),
+                            error: Boolean(
+                              form.touched.repaymentStartDate &&
+                                form.errors.repaymentStartDate
+                            ),
                           },
                         }}
                       />
                     )}
                   </Field>
                   <ErrorMessage
-                    name="rsd"
+                    name="repaymentStartDate"
                     component="span"
                     className="text-red-500 text-xs"
                   />
@@ -479,56 +546,157 @@ export default function CreateNewLoan() {
                 </div>
               </div>
 
-              {/* Collateral Section (only if loanType requires it) */}
-              {loanTypeConfig?.collateral && (
-                <div className="space-y-6">
-                  <div className="flex flex-row gap-2 items-center">
-                    <img src={moneyIcon} alt="money icon" />
-                    <h1 className="text-[18px] font-medium text-gray-700">
-                      Collateral & Attachments
-                    </h1>
-                  </div>
+              {/* Collateral Section (Always visible, required only if loan product needs it) */}
+              <div className="space-y-6">
+                <div className="flex flex-row gap-2 items-center">
+                  <img src={moneyIcon} alt="money icon" />
+                  <h1 className="text-[18px] font-medium text-gray-700">
+                    Collateral & Attachments
+                  </h1>
+                </div>
 
-                  <div className="flex flex-col gap-1">
-                    <label
-                      htmlFor="collateralDescription"
-                      className="text-[16px] font-medium text-gray-900"
-                    >
-                      Collateral Description
-                    </label>
-                    <textarea
-                      id="collateralDescription"
-                      name="collateralDescription"
-                      className={`resize-none h-[98px] p-4 rounded-[6px] border outline-primary ${
-                        formik.touched.collateralDescription &&
-                        formik.errors.collateralDescription
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }`}
-                      placeholder="Describe collateral"
-                      value={formik.values.collateralDescription}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                    />
-                    {formik.touched.collateralDescription &&
-                      formik.errors.collateralDescription && (
-                        <span className="text-sm text-red-500">
-                          {formik.errors.collateralDescription}
-                        </span>
-                      )}
-                  </div>
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="collateralDescription"
+                    className="text-[16px] font-medium text-gray-900"
+                  >
+                    Collateral Description
+                    {selectedLoanProduct?.requiresCollateral && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                  </label>
+                  <textarea
+                    id="collateralDescription"
+                    name="collateralDescription"
+                    className={`resize-none h-[98px] p-4 rounded-[6px] border outline-primary ${
+                      formik.touched.collateralDescription &&
+                      formik.errors.collateralDescription
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                    placeholder={
+                      selectedLoanProduct?.requiresCollateral
+                        ? "Describe the collateral being provided for this loan (required)"
+                        : "Describe any collateral being provided for this loan (optional)"
+                    }
+                    value={formik.values.collateralDescription}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                  {formik.touched.collateralDescription &&
+                    formik.errors.collateralDescription && (
+                      <span className="text-sm text-red-500">
+                        {formik.errors.collateralDescription}
+                      </span>
+                    )}
+                  {selectedLoanProduct && (
+                    <p className="text-xs text-gray-500">
+                      {selectedLoanProduct.requiresCollateral
+                        ? "This loan product requires collateral"
+                        : "This loan product does not require collateral"}
+                    </p>
+                  )}
+                </div>
+              </div>
 
-                  <FileDropzone
-                    name="Document"
-                    label="Upload Supporting Documents"
-                    accept={{
-                      "image/*": [".jpg", ".jpeg", ".png"],
-                      "application/pdf": [".pdf"],
+              {/* Supporting Documents Section (Always Available) */}
+              <div className="space-y-6">
+                <div className="flex flex-row gap-2 items-center">
+                  <img src={moneyIcon} alt="money icon" />
+                  <h1 className="text-[18px] font-medium text-gray-700">
+                    Supporting Documents
+                  </h1>
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Upload supporting documents (optional but recommended)
+                  </p>
+                  <FileUploadWithProgress
+                    label="Upload Document"
+                    onFileUploaded={(url) => {
+                      const currentDocs = formik.values.supportingDocuments;
+                      formik.setFieldValue("supportingDocuments", [
+                        ...currentDocs,
+                        url,
+                      ]);
                     }}
+                    onUploadError={(error) => {
+                      console.error("Upload error:", error);
+                    }}
+                    accept="image/*,application/pdf"
                     maxSizeMB={5}
                   />
+                  {formik.values.supportingDocuments.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-600">
+                        Uploaded Documents (
+                        {formik.values.supportingDocuments.length}):
+                      </p>
+                      {formik.values.supportingDocuments.map((doc, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
+                              <svg
+                                className="w-4 h-4 text-primary"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                              </svg>
+                            </div>
+                            <a
+                              href={doc}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline font-medium"
+                            >
+                              Document {index + 1}
+                            </a>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedDocs =
+                                formik.values.supportingDocuments.filter(
+                                  (_, i) => i !== index
+                                );
+                              formik.setFieldValue(
+                                "supportingDocuments",
+                                updatedDocs
+                              );
+                            }}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* Actions */}
               <div className="flex md:flex-row flex-col-reverse gap-4 justify-end">
@@ -536,17 +704,9 @@ export default function CreateNewLoan() {
                   variant="outline"
                   width="md:w-[102px] w-full"
                   height="h-14"
+                  onClick={() => navigate("/loan-requests")}
                 >
                   Cancel
-                </Button>
-                <Button
-                  icon={<img src={draft} />}
-                  iconPosition="left"
-                  variant="muted"
-                  width="md:w-[167px] w-full"
-                  height="h-14"
-                >
-                  Save as Draft
                 </Button>
                 <Button
                   type="submit"
@@ -554,14 +714,35 @@ export default function CreateNewLoan() {
                   iconPosition="left"
                   width="md:w-[187px] w-full"
                   height="h-14"
+                  disabled={isSubmitting}
                 >
-                  Submit Request
+                  {isSubmitting ? "Submitting..." : "Submit Request"}
                 </Button>
               </div>
             </Form>
           );
         }}
       </Formik>
+
+      {/* Success Modal */}
+      <SuccessModal
+        open={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Loan Request Submitted Successfully!"
+        message="Your loan request has been submitted and is now under review."
+        confirmText="OK"
+        onConfirm={handleSuccessModalClose}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        open={showErrorModal}
+        onClose={handleErrorModalClose}
+        message={errorMessage}
+        showRetry={true}
+        retryText="Try Again"
+        onRetry={handleErrorModalClose}
+      />
     </div>
   );
 }

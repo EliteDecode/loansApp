@@ -1,251 +1,109 @@
 import PageHeader from "@/components/PageHeader/PageHeader";
-import { Tab, Tabs } from "@mui/material";
-import React, { useState } from "react";
-import Table from "@/components/Table/Table";
-import type { Column } from "@/components/Table/Table.types";
-import { EllipsisVertical } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { getMyClients } from "@/services/features/client/clientService";
+import { getAllLoanProducts } from "@/services/features/loanProduct/loanProductService";
+import type { Client } from "@/services/features/client/client.types";
+import type { LoanProduct } from "@/services/features/loanProduct/loanProduct.types";
 import CreateNewLoan from "@/components/ui/CreateNewLoan";
 
 export default function LoanRequests() {
-  const navigate = useNavigate();
-  const [value, setValue] = useState(0);
+  const [searchParams] = useSearchParams();
 
-  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
+  // State for data
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loanProducts, setLoanProducts] = useState<LoanProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Example: API fetcher (replace with real API call)
+  // Get clientId from URL params (if coming from client details page)
+  const clientId = searchParams.get("clientId");
 
-  const columns: Column[] = [
-    { header: "CLIENT NAME", accessor: "name" },
-    { header: "AMOUNT REQUESTED", accessor: "amout" },
-    {
-      header: "STATUS",
-      accessor: "status",
-      render: (value: string) => (
-        <span
-          className={`px-2 text-[12px] leading-[145%] rounded-[12px] ${
-            {
-              Approved: "bg-[#0F973D1A] text-[#0F973D]",
-              Pending: "bg-[#F3A2181A] text-[#F3A218]",
-              Overdue: "bg-[#CB1A141A] text-[#CB1A14]",
-            }[value] || "bg-gray-100 text-gray-600" // fallback for unknown values
-          }`}
-        >
-          {value}
-        </span>
-      ),
-    },
-    { header: "DATE SUBMITTED", accessor: "date" },
-    { header: "MANAGER FEEDBACK", accessor: "feedback" },
-    {
-      header: "",
-      fixed: "right", // ✅ stick this column to the right
-      accessor: "id",
-      render: (_: any) => (
-        <div
-          className="cursor-pointer"
-          onClick={() => navigate(`/loan-requests/loan-summary`)}
-        >
-          <EllipsisVertical className="hidden md:block" />
+  // Fetch clients and loan products
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-          <p className="block md:hidden text-[14px] leading-[145%] font-semibold text-primary">
-            Details
-          </p>
+        // Fetch clients and loan products in parallel
+        const [clientsResponse, loanProductsResponse] = await Promise.all([
+          getMyClients(),
+          getAllLoanProducts(),
+        ]);
+
+        if (clientsResponse.success) {
+          setClients(clientsResponse.data);
+        } else {
+          setError(clientsResponse.message || "Failed to fetch clients");
+        }
+
+        if (loanProductsResponse.success) {
+          setLoanProducts(loanProductsResponse.data);
+        } else {
+          setError(
+            loanProductsResponse.message || "Failed to fetch loan products"
+          );
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader
+          title="Loan Application"
+          subtitle="Create a new loan request for your client"
+        />
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
-      ),
-    },
-  ];
+      </div>
+    );
+  }
 
-  const data = [
-    {
-      id: 1,
-      name: "John Yinka",
-      amout: "₦500,000",
-      status: "Approved",
-      date: "03 Aug 2025",
-      feedback: "Approved with standard terms",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      amout: "₦250,000",
-      status: "Pending",
-      date: "10 Aug 2025",
-      feedback: "Awaiting manager review",
-    },
-    {
-      id: 3,
-      name: "Emeka Okafor",
-      amout: "₦1,200,000",
-      status: "Rejected",
-      date: "15 Aug 2025",
-      feedback: "Rejected due to insufficient documents",
-    },
-    {
-      id: 4,
-      name: "Mary Johnson",
-      amout: "₦750,000",
-      status: "Approved",
-      date: "20 Aug 2025",
-      feedback: "Approved with minor conditions",
-    },
-    {
-      id: 5,
-      name: "Ibrahim Musa",
-      amout: "₦300,000",
-      status: "Pending",
-      date: "25 Aug 2025",
-      feedback: "Pending verification of guarantor",
-    },
-    {
-      id: 6,
-      name: "Ngozi Chukwu",
-      amout: "₦900,000",
-      status: "Approved",
-      date: "28 Aug 2025",
-      feedback: "Approved after income confirmation",
-    },
-    {
-      id: 7,
-      name: "Peter Adams",
-      amout: "₦1,500,000",
-      status: "Rejected",
-      date: "01 Sep 2025",
-      feedback: "Rejected due to poor credit score",
-    },
-    {
-      id: 8,
-      name: "Amaka Uche",
-      amout: "₦650,000",
-      status: "Approved",
-      date: "05 Sep 2025",
-      feedback: "Approved quickly due to high credit rating",
-    },
-    {
-      id: 9,
-      name: "David Brown",
-      amout: "₦400,000",
-      status: "Pending",
-      date: "08 Sep 2025",
-      feedback: "Awaiting compliance check",
-    },
-    {
-      id: 10,
-      name: "Fatima Bello",
-      amout: "₦2,000,000",
-      status: "Approved",
-      date: "12 Sep 2025",
-      feedback: "Approved for full requested amount",
-    },
-  ];
+  // Error state
+  if (error) {
+    return (
+      <div>
+        <PageHeader
+          title="Loan Application"
+          subtitle="Create a new loan request for your client"
+        />
+        <div className="text-center py-8">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <PageHeader
-        title="Loan Requests"
-        subtitle="Welcome back! Here's your loan portfolio overview"
+        title="Loan Application"
+        subtitle="Create a new loan request for your client"
       />
 
-      <div className="p-4 md:p-6 md:space-y-4 space-y-2 bg-white rounded-[12px]">
-        <div className="w-full">
-          <Tabs
-            value={value}
-            onChange={handleChange}
-            sx={{
-              mb: "20px",
-
-              "& .MuiTab-root": {
-                textTransform: "none",
-                padding: 0, // tighter height (optional)
-                height: 41,
-                width: 120,
-
-                "@media (min-width:600px)": {
-                  height: 52,
-                  width: 136,
-                },
-              },
-
-              "& .MuiTabs-indicator": { display: "none" }, // hide underline if you want bg active
-            }}
-            className="space-y-5"
-          >
-            <Tab
-              label={
-                <div className="flex items-center gap-2 text-[14px] leading-[145%] font-medium">
-                  Create New Loan
-                </div>
-              }
-              sx={{
-                textTransform: "none",
-
-                "& .tab-text": {
-                  color: "#344054", // default text color
-                },
-                "& .tab-badge": {
-                  backgroundColor: "#F0F2F5", // gray by default
-                  color: "#344054",
-                },
-                "&.Mui-selected .tab-text": {
-                  color: "#002D62", // active text color
-                },
-
-                "&.Mui-selected": {
-                  color: "#002D62", // active text color
-                  backgroundColor: "#E6EAEF",
-                  borderBottom: "1px solid #002D62",
-                },
-
-                "&.Mui-selected .tab-badge": {
-                  backgroundColor: "#002D62", // active badge bg
-                  color: "#fff", // active badge text
-                },
-              }}
-            />
-
-            <Tab
-              label={
-                <div className="flex items-center gap-2 text-[14px] leading-[145%] font-medium">
-                  View Submitted Loans
-                </div>
-              }
-              sx={{
-                minWidth: "182px",
-                textTransform: "none",
-                "& .tab-text": {
-                  color: "#344054", // default text color
-                },
-                "& .tab-badge": {
-                  backgroundColor: "#F0F2F5", // gray by default
-                  color: "#344054",
-                },
-                "&.Mui-selected .tab-text": {
-                  color: "#002D62", // active text color
-                },
-
-                "&.Mui-selected": {
-                  color: "#002D62", // active text color
-                  backgroundColor: "#E6EAEF",
-                  borderBottom: "1px solid #002D62",
-                },
-
-                "&.Mui-selected .tab-badge": {
-                  backgroundColor: "#002D62", // active badge bg
-                  color: "#fff", // active badge text
-                },
-              }}
-            />
-          </Tabs>
-
-          {value === 0 && <CreateNewLoan />}
-          {value === 1 && (
-            <div className="space-y-4 pb-4 lg:min-h-[559px] h-full">
-              <Table columns={columns} data={data} />
-            </div>
-          )}
-        </div>
+      <div className="p-4 md:p-6 bg-white rounded-[12px]">
+        <CreateNewLoan
+          clients={clients}
+          loanProducts={loanProducts}
+          preselectedClientId={clientId}
+        />
       </div>
     </div>
   );

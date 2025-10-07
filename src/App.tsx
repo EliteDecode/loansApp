@@ -18,6 +18,7 @@ import ProfileNotifications from "./pages/ProfileNotifications";
 import AdminDashboard from "./pages/AdminDashboard";
 import type { RootState } from "./store";
 import Loans from "./pages/Loans";
+import LoanDetails from "./pages/LoanDetails";
 import LoanInfo from "./pages/LoanInfo";
 import Payments from "./pages/Payments";
 import CreditAgents from "./pages/CreditAgents";
@@ -65,6 +66,7 @@ function App() {
         <Route path="clients/:id" element={<ClientDetails />} />
 
         <Route path="loans" element={<Loans />} />
+        <Route path="loans/:id" element={<LoanDetails />} />
         <Route path="loans/loan-info/:id" element={<LoanInfo />} />
         <Route path="loan-requests" element={<LoanRequests />} />
         <Route path="loan-requests/loan-summary" element={<LoanSummary />} />

@@ -9,6 +9,7 @@ interface FileUploadWithProgressProps {
   label: string;
   className?: string;
   value?: string; // Add value prop to make it controlled
+  folder?: string; // Add folder prop to customize upload folder
 }
 
 export default function FileUploadWithProgress({
@@ -19,6 +20,7 @@ export default function FileUploadWithProgress({
   label,
   className = "",
   value = "",
+  folder = "loan-app",
 }: FileUploadWithProgressProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -61,7 +63,7 @@ export default function FileUploadWithProgress({
         onProgress: (progress: UploadProgress) => {
           setUploadProgress(progress.percentage);
         },
-        folder: "loan-app/clients",
+        folder: folder,
       });
 
       onFileUploaded(result.secure_url);
