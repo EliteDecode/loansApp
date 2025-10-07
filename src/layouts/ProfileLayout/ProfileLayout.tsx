@@ -1,57 +1,18 @@
 import PageHeader from "@/components/PageHeader/PageHeader";
-import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import type { RootState } from "@/store";
-import { getDirectorProfile } from "@/services/features/director/directorService";
-import { getManagerProfile } from "@/services/features/manager/managerService";
-import { getAgentProfile } from "@/services/features/agent/agentService";
+import { useProfileHook } from "@/hooks";
 
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
 import user from "@/assets/icons/user.svg";
 import shield from "@/assets/icons/shield.svg";
 import bell from "@/assets/icons/bell.svg";
 
-interface ProfileData {
-  firstName: string;
-  lastName: string;
-  directorID?: string;
-  managerID?: string;
-  creditAgentID?: string;
-}
-
 export default function ProfileLayout() {
   const [open, setOpen] = useState(false);
-  const { role } = useSelector((state: RootState) => state.auth);
-  const [profileData, setProfileData] = useState<ProfileData | null>(null);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        let response;
-
-        if (role === "director") {
-          response = await getDirectorProfile();
-        } else if (role === "manager") {
-          response = await getManagerProfile();
-        } else if (role === "creditAgent") {
-          response = await getAgentProfile();
-        } else {
-          return;
-        }
-
-        if (response.success) {
-          setProfileData(response.data);
-        }
-      } catch (err) {
-        console.error("Profile fetch error:", err);
-      }
-    };
-
-    fetchProfile();
-  }, [role]);
+  const { profileData, role, getRoleDisplayName } = useProfileHook();
 
   return (
     <div className="relative">
@@ -73,7 +34,11 @@ export default function ProfileLayout() {
       <div className="w-full h-full flex flex-col lg:flex-row gap-6">
         {/* Sidebar for Desktop */}
         <div className="hidden lg:flex items-center justify-start max-w-[288px] w-full flex-col p-6 gap-6 bg-white rounded-xl">
-          <SidebarNav profileData={profileData} role={role} />
+          <SidebarNav
+            profileData={profileData}
+            role={role}
+            getRoleDisplayName={getRoleDisplayName}
+          />
         </div>
 
         {/* Sidebar Drawer for Mobile */}
@@ -107,6 +72,7 @@ export default function ProfileLayout() {
                 <SidebarNav
                   profileData={profileData}
                   role={role}
+                  getRoleDisplayName={getRoleDisplayName}
                   onClick={() => setOpen(false)}
                 />
               </motion.div>
@@ -125,24 +91,17 @@ export default function ProfileLayout() {
 
 interface SidebarNavProps {
   onClick?: () => void;
-  profileData: ProfileData | null;
+  profileData: any;
   role: string;
+  getRoleDisplayName: () => string;
 }
 
-function SidebarNav({ onClick, profileData, role }: SidebarNavProps) {
-  const getRoleDisplayName = () => {
-    switch (role) {
-      case "director":
-        return "Director";
-      case "manager":
-        return "Manager";
-      case "creditAgent":
-        return "Credit Agent";
-      default:
-        return "User";
-    }
-  };
-
+function SidebarNav({
+  onClick,
+  profileData,
+  role,
+  getRoleDisplayName,
+}: SidebarNavProps) {
   const getFullName = () => {
     if (!profileData) return "Loading...";
     return `${profileData.firstName} ${profileData.lastName}`;

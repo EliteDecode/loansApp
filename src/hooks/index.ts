@@ -24,5 +24,8 @@ export type { UseClientEditReturn } from "./useClientEditHook/useClientEditHook"
 export { useClientSuspendHook } from "./useClientSuspendHook/useClientSuspendHook";
 export type { UseClientSuspendReturn } from "./useClientSuspendHook/useClientSuspendHook";
 
+// Profile hooks
+export { useProfileHook } from "./useProfileHook";
+
 // Helper functions
 export * from "./helpers";

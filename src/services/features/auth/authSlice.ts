@@ -125,6 +125,11 @@ const authSlice = createSlice({
       localStorage.removeItem("asavic_token");
       localStorage.removeItem("asavic_refresh_token");
       localStorage.removeItem("asa_role");
+      localStorage.removeItem("asa_user");
+      // Clear profile data from localStorage
+      localStorage.removeItem("currentDirector");
+      localStorage.removeItem("currentManager");
+      localStorage.removeItem("currentAgent");
     },
   },
   extraReducers: (builder) => {
@@ -244,6 +249,11 @@ const authSlice = createSlice({
         localStorage.removeItem("asavic_token");
         localStorage.removeItem("asavic_refresh_token");
         localStorage.removeItem("asa_role");
+        localStorage.removeItem("asa_user");
+        // Clear profile data from localStorage
+        localStorage.removeItem("currentDirector");
+        localStorage.removeItem("currentManager");
+        localStorage.removeItem("currentAgent");
       });
   },
 });

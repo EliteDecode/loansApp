@@ -3,9 +3,14 @@ import { createSlice } from "@reduxjs/toolkit";
 import agentService from "./agentService";
 import type { AgentState } from "./agent.types";
 
+// Load current agent from localStorage
+const currentAgentFromStorage = localStorage.getItem("currentAgent");
+
 const initialState: AgentState = {
   creditAgents: [],
-  currentAgent: null,
+  currentAgent: currentAgentFromStorage
+    ? JSON.parse(currentAgentFromStorage)
+    : null,
   isLoading: false,
   isSuccess: false,
   isError: false,
@@ -137,6 +142,8 @@ const agentSlice = createSlice({
       state.totalCount = 0;
       state.currentPage = 1;
       state.totalPages = 1;
+      // Clear localStorage
+      localStorage.removeItem("currentAgent");
     },
   },
   extraReducers: (builder) => {
@@ -145,6 +152,13 @@ const agentSlice = createSlice({
       // Get Profile
       .addCase(getAgentProfile.fulfilled, (state, action) => {
         state.currentAgent = action.payload?.data || null;
+        // Store in localStorage
+        if (state.currentAgent) {
+          localStorage.setItem(
+            "currentAgent",
+            JSON.stringify(state.currentAgent)
+          );
+        }
       })
       // Update Profile
       .addCase(agentUpdateProfile.pending, (state) => {
@@ -160,6 +174,13 @@ const agentSlice = createSlice({
         state.isSuccess = true;
         state.isError = false;
         state.isLoading = false;
+        // Update localStorage
+        if (state.currentAgent) {
+          localStorage.setItem(
+            "currentAgent",
+            JSON.stringify(state.currentAgent)
+          );
+        }
       })
       .addCase(agentUpdateProfile.rejected, (state, action) => {
         state.isLoading = false;

@@ -3,9 +3,14 @@ import { createSlice } from "@reduxjs/toolkit";
 import directorService from "./directorService";
 import type { DirectorState } from "./director.types";
 
+// Load current director from localStorage
+const currentDirectorFromStorage = localStorage.getItem("currentDirector");
+
 const initialState: DirectorState = {
   directors: [],
-  currentDirector: null,
+  currentDirector: currentDirectorFromStorage
+    ? JSON.parse(currentDirectorFromStorage)
+    : null,
   isLoading: false,
   isSuccess: false,
   isError: false,
@@ -210,6 +215,8 @@ const directorSlice = createSlice({
       state.totalCount = 0;
       state.currentPage = 1;
       state.totalPages = 1;
+      // Clear localStorage
+      localStorage.removeItem("currentDirector");
     },
   },
   extraReducers: (builder) => {
@@ -218,6 +225,13 @@ const directorSlice = createSlice({
       // Get Profile
       .addCase(getDirectorProfile.fulfilled, (state, action) => {
         state.currentDirector = action.payload?.data || null;
+        // Store in localStorage
+        if (state.currentDirector) {
+          localStorage.setItem(
+            "currentDirector",
+            JSON.stringify(state.currentDirector)
+          );
+        }
       })
       // Update Profile
       .addCase(directorUpdateProfile.pending, (state) => {
@@ -233,6 +247,13 @@ const directorSlice = createSlice({
         state.isSuccess = true;
         state.isError = false;
         state.isLoading = false;
+        // Update localStorage
+        if (state.currentDirector) {
+          localStorage.setItem(
+            "currentDirector",
+            JSON.stringify(state.currentDirector)
+          );
+        }
       })
       .addCase(directorUpdateProfile.rejected, (state, action) => {
         state.isLoading = false;

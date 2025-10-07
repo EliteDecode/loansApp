@@ -1,8 +1,9 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { login } from "@/services/features/auth/authSlice";
+import { getDirectorProfile } from "@/services/features";
 import { loginValidationSchema } from "../helpers/validationSchemas";
-import type { RootState } from "@/store";
+import type { RootState, AppDispatch } from "@/store";
 
 export interface LoginValues {
   email: string;
@@ -10,7 +11,7 @@ export interface LoginValues {
 }
 
 export const useDirectorLoginHook = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
   const { isLoading, isError, message } = useSelector(
@@ -22,6 +23,8 @@ export const useDirectorLoginHook = () => {
       login({ ...values, role: "director" }) as any
     );
     if (login.fulfilled.match(resultAction)) {
+      // Fetch director profile after successful login
+      await dispatch(getDirectorProfile());
       navigate("/"); // Redirect to dashboard on successful login
     }
   };

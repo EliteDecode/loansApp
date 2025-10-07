@@ -3,9 +3,14 @@ import { createSlice } from "@reduxjs/toolkit";
 import managerService from "./managerService";
 import type { ManagerState } from "./manager.types";
 
+// Load current manager from localStorage
+const currentManagerFromStorage = localStorage.getItem("currentManager");
+
 const initialState: ManagerState = {
   managers: [],
-  currentManager: null,
+  currentManager: currentManagerFromStorage
+    ? JSON.parse(currentManagerFromStorage)
+    : null,
   isLoading: false,
   isSuccess: false,
   isError: false,
@@ -91,6 +96,8 @@ const managerSlice = createSlice({
       state.totalCount = 0;
       state.currentPage = 1;
       state.totalPages = 1;
+      // Clear localStorage
+      localStorage.removeItem("currentManager");
     },
   },
   extraReducers: (builder) => {
@@ -99,6 +106,13 @@ const managerSlice = createSlice({
       // Get Profile
       .addCase(getManagerProfile.fulfilled, (state, action) => {
         state.currentManager = action.payload?.data || null;
+        // Store in localStorage
+        if (state.currentManager) {
+          localStorage.setItem(
+            "currentManager",
+            JSON.stringify(state.currentManager)
+          );
+        }
       })
       // Update Profile
       .addCase(managerUpdateProfile.pending, (state) => {
@@ -114,6 +128,13 @@ const managerSlice = createSlice({
         state.isSuccess = true;
         state.isError = false;
         state.isLoading = false;
+        // Update localStorage
+        if (state.currentManager) {
+          localStorage.setItem(
+            "currentManager",
+            JSON.stringify(state.currentManager)
+          );
+        }
       })
       .addCase(managerUpdateProfile.rejected, (state, action) => {
         state.isLoading = false;

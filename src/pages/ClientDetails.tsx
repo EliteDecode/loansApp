@@ -14,13 +14,10 @@ import { getClientDetails } from "@/services/features/client/clientService";
 import type { Client } from "@/services/features/client/client.types";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store";
-import { getDirectorProfile } from "@/services/features/director/directorService";
-import { getManagerProfile } from "@/services/features/manager/managerService";
-import { getAgentProfile } from "@/services/features/agent/agentService";
 import SuccessModal from "@/components/modals/SuccessModal/SuccessModal";
 import ErrorModal from "@/components/modals/ErrorModal/ErrorModal";
 import ConfirmationModal from "@/components/modals/ConfirmationModal/ConfirmationModal";
-import { useClientSuspendHook } from "@/hooks";
+import { useClientSuspendHook, useProfileHook } from "@/hooks";
 
 // Loan interface based on the API response
 interface Loan {
@@ -116,32 +113,14 @@ export default function ClientDetails() {
     handleErrorModalClose,
   } = useClientSuspendHook();
 
-  // Fetch current user profile
+  // Use the profile hook to get current user profile
+  const { profileData } = useProfileHook();
+
   useEffect(() => {
-    const fetchCurrentUserProfile = async () => {
-      try {
-        let response;
-
-        if (role === "director") {
-          response = await getDirectorProfile();
-        } else if (role === "manager") {
-          response = await getManagerProfile();
-        } else if (role === "creditAgent") {
-          response = await getAgentProfile();
-        }
-
-        if (response?.success) {
-          setCurrentUserProfile(response.data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch current user profile:", err);
-      }
-    };
-
-    if (role) {
-      fetchCurrentUserProfile();
+    if (profileData) {
+      setCurrentUserProfile(profileData);
     }
-  }, [role]);
+  }, [profileData]);
 
   // Fetch client details
   useEffect(() => {
