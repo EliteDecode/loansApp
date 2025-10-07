@@ -3,12 +3,12 @@ import Button from "../Button/Button";
 
 // ✅ Define props type
 interface ConfirmSystemRestoreProps {
-  setOpenShutdownPasswordModal: (open: boolean) => void;
+  setOpenRestorePasswordModal: (open: boolean) => void;
   onClose: () => void;
 }
 
 export default function ConfirmSystemRestore({
-  setOpenShutdownPasswordModal,
+  setOpenRestorePasswordModal,
   onClose,
 }: ConfirmSystemRestoreProps) {
   return (
@@ -30,10 +30,10 @@ export default function ConfirmSystemRestore({
           Cancel
         </Button>
         <Button
-          variant="danger"
+          variant="success"
           onClick={() => {
             onClose();
-            setOpenShutdownPasswordModal(true);
+            setOpenRestorePasswordModal(true);
           }}
         >
           Restore

@@ -6,11 +6,16 @@ import { useEffect, useState } from "react";
 import Modal from "@/components/Modal/Modal";
 import ConfirmSystemShutdown from "@/components/ui/ConfirmSystemShutdown";
 import ShutdownPassword from "@/components/ui/ShutdownPassword";
+import ConfirmSystemRestore from "@/components/ui/ConfirmSystemRestore";
+import RestorePassword from "@/components/ui/RestorePassword";
 
 const index = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [openShutdownModal, setOpenShutdownModal] = useState(false);
   const [openShutdownPasswordModal, setOpenShutdownPasswordModal] =
+    useState(false);
+  const [openRestoreModal, setOpenRestoreModal] = useState(false);
+  const [openRestorePasswordModal, setOpenRestorePasswordModal] =
     useState(false);
 
   // Lock / unlock body scroll when sidebar opens
@@ -33,7 +38,10 @@ const index = () => {
         <MobileSidebar isOpen={isOpen} setIsOpen={setIsOpen} />
       </div>
       <div className="hidden lg:block">
-        <DesktopSidebar setOpenShutdownModal={setOpenShutdownModal} />
+        <DesktopSidebar
+          setOpenShutdownModal={setOpenShutdownModal}
+          setOpenRestoreModal={setOpenRestoreModal}
+        />
       </div>
       <div className="w-full flex">
         <div className="overflow-hidden w-full lg:ml-[280px]">
@@ -59,11 +67,30 @@ const index = () => {
       </Modal>
 
       <Modal
+        isOpen={openRestoreModal}
+        onClose={() => setOpenRestoreModal(false)}
+        maxWidth="max-w-[613px]"
+      >
+        <ConfirmSystemRestore
+          setOpenRestorePasswordModal={setOpenRestorePasswordModal}
+          onClose={() => setOpenRestoreModal(false)}
+        />
+      </Modal>
+
+      <Modal
         isOpen={openShutdownPasswordModal}
         onClose={() => setOpenShutdownPasswordModal(false)}
         maxWidth="max-w-[613px]"
       >
         <ShutdownPassword onClose={() => setOpenShutdownPasswordModal(false)} />
+      </Modal>
+
+      <Modal
+        isOpen={openRestorePasswordModal}
+        onClose={() => setOpenRestorePasswordModal(false)}
+        maxWidth="max-w-[613px]"
+      >
+        <RestorePassword onClose={() => setOpenRestorePasswordModal(false)} />
       </Modal>
     </>
   );

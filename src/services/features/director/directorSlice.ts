@@ -144,6 +144,13 @@ export const restoreSystem = createAsyncThunkWithHandler(
   }
 );
 
+export const shutdownSystem = createAsyncThunkWithHandler(
+  "director/shutdownSystem",
+  async (payload: { reason: string; password: string }, _) => {
+    return await directorService.shutdownSystem(payload);
+  }
+);
+
 // Manager Management Actions
 export const createManager = createAsyncThunkWithHandler(
   "director/createManager",
@@ -307,6 +314,25 @@ const directorSlice = createSlice({
         state.isError = true;
         state.message = action.payload as string;
         state.isSuccess = false;
+      })
+      //System shut down
+      .addCase(shutdownSystem.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(shutdownSystem.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.message = action.payload?.message || "System shutdown successful";
+      })
+      .addCase(shutdownSystem.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = false;
+        state.isError = true;
+        state.message = action.payload as string;
       });
     // Logout - Now handled by auth service
   },

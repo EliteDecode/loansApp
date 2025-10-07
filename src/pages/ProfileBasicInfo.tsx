@@ -20,6 +20,8 @@ export default function ProfileBasicInfo() {
     );
   }
 
+  console.log(profileData);
+
   return (
     <div className="space-y-6">
       <div className="md:text-[28px] text-[20px] leading-[120%] tracking-[-2%] py-6 font-semibold text-gray-700 border-b-[0.2px] border-gray-400">

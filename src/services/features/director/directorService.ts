@@ -99,6 +99,14 @@ export const restoreSystem = async (data: { reason: string }) => {
   return response.data;
 };
 
+export const shutdownSystem = async (data: {
+  reason: string;
+  password: string;
+}) => {
+  const response = await axiosClient.post("/director/shutdown", data);
+  return response.data;
+};
+
 // Manager Management
 export const createManager = async (data: any) => {
   const response = await axiosClient.post("/director/create-manager", data);
@@ -162,6 +170,7 @@ const directorService = {
   freezeAccount,
   unfreezeAccount,
   restoreSystem,
+  shutdownSystem,
   // Manager Management
   createManager,
   getAllManagers,
