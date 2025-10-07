@@ -24,6 +24,7 @@ import Payments from "./pages/Payments";
 import CreditAgents from "./pages/CreditAgents";
 import CreditAgentsInfo from "./pages/CreditAgentsInfo";
 import AddAgent from "./pages/AddAgent";
+import EditAgent from "./pages/EditAgent";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import LoginPage from "./pages/LoginPage";
@@ -125,6 +126,14 @@ function App() {
           element={
             <RoleRoute allowedRoles={["director", "manager"]}>
               <CreditAgentsInfo />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="credit-agents/edit/:id"
+          element={
+            <RoleRoute allowedRoles={["director", "manager"]}>
+              <EditAgent />
             </RoleRoute>
           }
         />

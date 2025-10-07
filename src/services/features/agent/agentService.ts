@@ -42,13 +42,8 @@ export const createCreditAgent = async (data: any) => {
   return response.data;
 };
 
-export const getAllCreditAgents = async (params?: {
-  page?: number;
-  limit?: number;
-  status?: string;
-  search?: string;
-}) => {
-  const response = await axiosClient.get("/agent/get-all", { params });
+export const getAllCreditAgents = async () => {
+  const response = await axiosClient.get("/agent/get-all");
   return response.data;
 };
 

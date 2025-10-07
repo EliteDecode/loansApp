@@ -1,94 +1,81 @@
-import rightArrow from "@/assets/icons/rightArrow.svg";
-import leftArrow from "@/assets/icons/leftArrow.svg";
-import addPrimary from "@/assets/icons/addPrimary.svg";
-import Table from "../Table/Table";
-import type { Column } from "../Table/Table.types";
+import CustomTable from "../CustomTable/CustomTable";
+import type { CustomTableColumn } from "../CustomTable/CustomTable.types";
 
-export default function CreditAgentsClients() {
-  const columns: Column[] = [
-    { header: "CLIENT ID", accessor: "date" },
-    { header: "LOAN ID", accessor: "phoneNumber" },
-    { header: "CLIENT NAME", accessor: "phoneNumber" },
-    { header: "LOAN STATUS", accessor: "phoneNumber" },
+interface CreditAgentsClientsProps {
+  clients?: Array<{
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    status: string;
+  }>;
+}
+
+export default function CreditAgentsClients({
+  clients = [],
+}: CreditAgentsClientsProps) {
+  const columns: CustomTableColumn<any>[] = [
     {
-      header: "REPAYMENT PROGRESS",
-      accessor: "phoneNumber",
-      fixed: "left",
-      render: (_: any) => (
-        <div
-          className="flex gap-1 flex-col text-[14px] leading-[145%]"
-          //   onClick={() => navigate(`/clients/${row.id}`)}
-        >
-          <div className="w-full h-2 bg-gray-200 rounded-xl overflow-hidden">
-            <div
-              className={`h-full bg-[#006400] transition-all duration-500`}
-              style={{ width: `${70}%` }}
-            />
-          </div>
-          <p className="cursor-pointer text-gray-600">
-            65% (₦97,500 / ₦150,000)
+      header: "CLIENT ID",
+      accessor: "_id",
+      render: (value: string) => (
+        <span className="font-medium text-gray-900">{value.slice(-6)}</span>
+      ),
+    },
+    {
+      header: "CLIENT NAME",
+      accessor: "firstName",
+      render: (_: any, row: any) => (
+        <div>
+          <p className="font-medium text-gray-900">
+            {row.firstName} {row.lastName}
           </p>
+          <p className="text-sm text-gray-500">{row.email}</p>
         </div>
+      ),
+    },
+    {
+      header: "PHONE NUMBER",
+      accessor: "phoneNumber",
+      render: (value: string) => <span className="text-gray-700">{value}</span>,
+    },
+    {
+      header: "STATUS",
+      accessor: "status",
+      render: (value: string) => (
+        <span
+          className={`px-2 py-1 text-[12px] leading-[145%] rounded-[12px] font-medium ${
+            {
+              active: "bg-[#0F973D1A] text-[#0F973D]",
+              inactive: "bg-[#F3A2181A] text-[#F3A218]",
+              suspended: "bg-[#CB1A141A] text-[#CB1A14]",
+            }[value] || "bg-gray-100 text-gray-600"
+          }`}
+        >
+          {value.charAt(0).toUpperCase() + value.slice(1)}
+        </span>
       ),
     },
   ];
 
-  const data = [
-    {
-      id: 1,
-      name: "John Yinka",
-      phoneNumber: "08123456789",
-      status: "Approved",
-      date: "2025-09-01",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      phoneNumber: "08098765432",
-      status: "Pending",
-      date: "2025-09-02",
-    },
-    {
-      id: 3,
-      name: "Michael Brown",
-      phoneNumber: "07011223344",
-      status: "Overdue",
-      date: "2025-09-03",
-    },
-    {
-      id: 4,
-      name: "Sophia Johnson",
-      phoneNumber: "09033445566",
-      status: "Active",
-      date: "2025-09-04",
-    },
-    {
-      id: 5,
-      name: "David Williams",
-      phoneNumber: "08155667788",
-      status: "Declined",
-      date: "2025-09-05",
-    },
-  ];
+  const data = clients;
 
   return (
     <div className="space-y-6">
-      <Table columns={columns} data={data} />
-      <div className="flex items-center justify-between text-[14px] leadng-[145%] text-gray-700 font-semibold">
-        <button className="sm:px-4 px-2 py-2 flex items-center gap-2 border border-gray-300 rounded-[8px] cursor-pointer">
-          <img src={addPrimary} className="hidden sm:block" />
-          <p className="hidden sm:block">Previous</p>
-          <img src={leftArrow} className="block sm:hidden" />
-        </button>
-
-        <p>Showing 1–20 of 250 clients</p>
-
-        <button className="sm:px-4 px-2 py-2 flex items-center gap-2 border border-gray-300 rounded-[8px] cursor-pointer">
-          <p className="hidden sm:block">Next</p>
-          <img src={addPrimary} className="hidden sm:block" />
-          <img src={rightArrow} className="block sm:hidden" />
-        </button>
-      </div>
+      <CustomTable
+        data={data}
+        columns={columns}
+        searchable={true}
+        searchPlaceholder="Search by client name, email, or status"
+        searchFields={["firstName", "lastName", "email", "status"]}
+        pagination={true}
+        pageSize={10}
+        showPageSizeSelector={true}
+        pageSizeOptions={[5, 10, 20, 50]}
+        emptyMessage="No clients assigned to this agent"
+        loading={false}
+      />
     </div>
   );
 }

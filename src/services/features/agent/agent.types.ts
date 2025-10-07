@@ -12,12 +12,50 @@ export interface CreditAgent {
   lgaOfResidence: string;
   bankName: string;
   bankAccount: string;
+  creditAgentID: string;
   employmentType: "full-time" | "part-time" | "contract" | "self-employed";
   dateOfEmployment: string;
   validNIN: string;
   utilityBill: string;
   passport: string;
   employmentLetter: string;
+  financeRecord: {
+    currentSalary: number;
+    salaryHistory: any[];
+    paymentRecords: any[];
+    unpaidMonths: string[];
+    totalUnpaidAmount: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  clients: Array<{
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    status: string;
+  }>;
+  loanRequests: Array<{
+    _id: string;
+    amount: number;
+    status: string;
+    clientId: {
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+    creditAgentId: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      creditAgentID: string;
+    };
+  }>;
+  statistics: {
+    totalClients: number;
+    totalLoanRequests: number;
+  };
   canApproveLoans: boolean;
   canViewReports: boolean;
   status: "active" | "inactive" | "suspended";

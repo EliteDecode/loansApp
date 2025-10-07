@@ -119,3 +119,86 @@ export const clientValidationSchemas = [
     passport: Yup.string().required("Passport photograph is required"),
   }),
 ];
+
+// Agent form validation schemas
+export const agentValidationSchemas = [
+  // Step 1: Personal Information
+  Yup.object({
+    firstName: Yup.string().required("First name is required"),
+    lastName: Yup.string().required("Last name is required"),
+    gender: Yup.string().required("Gender is required"),
+    dateOfBirth: Yup.date().required("Date of birth is required"),
+    email: Yup.string()
+      .email("Invalid email format")
+      .required("Email is required"),
+    phoneNumber: Yup.string().required("Phone number is required"),
+    residentialAddress: Yup.string().required(
+      "Residential address is required"
+    ),
+    stateOfResidence: Yup.string().required("State of residence is required"),
+    lgaOfResidence: Yup.string().required("LGA of residence is required"),
+    bankName: Yup.string().required("Bank name is required"),
+    bankAccount: Yup.string().required("Bank account number is required"),
+  }),
+  // Step 2: Employment Details
+  Yup.object({
+    employmentType: Yup.string().required("Employment type is required"),
+    dateOfEmployment: Yup.date().required("Date of employment is required"),
+    validNIN: Yup.string().required("Valid NIN is required"),
+    utilityBill: Yup.string().required("Utility bill is required"),
+    passport: Yup.string().required("Passport photo is required"),
+    employmentLetter: Yup.string().required("Employment letter is required"),
+  }),
+  // Step 3: System Access (for AddAgent only)
+  Yup.object({
+    password: Yup.string()
+      .min(8, "Password must be at least 8 characters")
+      .matches(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$&])[A-Za-z\d@#$&]{8,}$/,
+        "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@#$&)"
+      )
+      .required("Password is required"),
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref("password")], "Passwords must match")
+      .required("Confirm password is required"),
+  }),
+  // Step 4: Permissions
+  Yup.object({
+    canApproveLoans: Yup.boolean(),
+    canViewReports: Yup.boolean(),
+  }),
+];
+
+// Agent edit validation schemas (without password step)
+export const agentEditValidationSchemas = [
+  // Step 1: Personal Information
+  Yup.object({
+    firstName: Yup.string().required("First name is required"),
+    lastName: Yup.string().required("Last name is required"),
+    gender: Yup.string().required("Gender is required"),
+    dateOfBirth: Yup.date().required("Date of birth is required"),
+    email: Yup.string()
+      .email("Invalid email format")
+      .required("Email is required"),
+    phoneNumber: Yup.string().required("Phone number is required"),
+    residentialAddress: Yup.string().required(
+      "Residential address is required"
+    ),
+    stateOfResidence: Yup.string().required("State of residence is required"),
+    lgaOfResidence: Yup.string().required("LGA of residence is required"),
+  }),
+  // Step 2: Employment Details
+  Yup.object({
+    employmentType: Yup.string().required("Employment type is required"),
+    dateOfEmployment: Yup.date().required("Date of employment is required"),
+    bankName: Yup.string().required("Bank name is required"),
+    bankAccount: Yup.string().required("Bank account number is required"),
+  }),
+  // Step 3: Documents
+  Yup.object({
+    validNIN: Yup.string().required("Valid NIN is required"),
+    utilityBill: Yup.string().required("Utility bill is required"),
+    passport: Yup.string().required("Passport photo is required"),
+    employmentLetter: Yup.string().required("Employment letter is required"),
+  }),
+];
