@@ -139,7 +139,7 @@ export const unfreezeAccount = createAsyncThunkWithHandler(
 
 export const restoreSystem = createAsyncThunkWithHandler(
   "director/restoreSystem",
-  async (payload: { reason: string }, _) => {
+  async (payload: { password: string }, _) => {
     return await directorService.restoreSystem(payload);
   }
 );

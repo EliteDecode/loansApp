@@ -22,7 +22,7 @@ const DesktopSidebar = ({
   const filteredSidebarLinks = getFilteredSidebarLinks(role);
 
   // Remove for later
-  const sysyemDowm = false as boolean;
+  const sysyemDowm = true as boolean;
 
   console.log(user);
 
@@ -74,18 +74,18 @@ const DesktopSidebar = ({
             {sysyemDowm === true ? (
               <div
                 className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
-                onClick={() => setOpenShutdownModal(true)}
-              >
-                <img src={info} />
-                <p>Shutdown System</p>
-              </div>
-            ) : (
-              <div
-                className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
                 onClick={() => setOpenRestoreModal(true)}
               >
                 <img src={info} />
                 <p>Restore System</p>
+              </div>
+            ) : (
+              <div
+                className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
+                onClick={() => setOpenShutdownModal(true)}
+              >
+                <img src={info} />
+                <p>Shutdown System</p>
               </div>
             )}
           </div>

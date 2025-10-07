@@ -35,18 +35,17 @@ export default function ShutdownPassword({ onClose }: ShutdownPasswordProps) {
         console.log(values);
         try {
           const res = await dispatch(shutdownSystem(values)).unwrap();
-          showSuccessToast(res?.message); // friendly message
+          showSuccessToast(res?.message || "System shutdown successfully.");
           onClose();
         } catch (err: any) {
           const message =
-            err?.message ||
             err?.response?.data?.message ||
-            "Failed to create loan product. Try again.";
+            err?.message ||
+            "Failed to shut down system. Try again.";
           showErrorToast(message);
         } finally {
           setSubmitting(false);
         }
-        setSubmitting(false);
       }}
     >
       {({ isSubmitting, dirty, isValid, errors, touched }) => (

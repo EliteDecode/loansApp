@@ -94,8 +94,8 @@ export const unfreezeAccount = async (data: {
   return response.data;
 };
 
-export const restoreSystem = async (data: { reason: string }) => {
-  const response = await axiosClient.post("/director/restore", data);
+export const restoreSystem = async (data: { password: string }) => {
+  const response = await axiosClient.post("/restore", data);
   return response.data;
 };
 
@@ -103,7 +103,7 @@ export const shutdownSystem = async (data: {
   reason: string;
   password: string;
 }) => {
-  const response = await axiosClient.post("/director/shutdown", data);
+  const response = await axiosClient.post("/shutdown", data);
   return response.data;
 };
 
