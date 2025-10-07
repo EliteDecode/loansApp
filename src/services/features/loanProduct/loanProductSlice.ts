@@ -27,15 +27,12 @@ export const createLoanProduct = createAsyncThunkWithHandler(
 
 export const getAllLoanProducts = createAsyncThunkWithHandler(
   "loanProduct/getAllLoanProducts",
-  async (
-    _,
-    payload?: {
-      page?: number;
-      limit?: number;
-      status?: string;
-      search?: string;
-    }
-  ) => {
+  async (payload?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+  }) => {
     return await loanProductService.getAllLoanProducts(payload);
   }
 );
@@ -148,7 +145,7 @@ const loanProductSlice = createSlice({
       })
       // Get All Loan Products
       .addCase(getAllLoanProducts.fulfilled, (state, action) => {
-        state.loanProducts = action.payload?.data?.loanProducts || [];
+        state.loanProducts = action.payload?.data || [];
         state.totalCount = action.payload?.data?.totalCount || 0;
         state.currentPage = action.payload?.data?.currentPage || 1;
         state.totalPages = action.payload?.data?.totalPages || 1;
@@ -162,6 +159,7 @@ const loanProductSlice = createSlice({
       })
       // Get Active Loan Products
       .addCase(getActiveLoanProducts.fulfilled, (state, action) => {
+        console.log(action);
         state.activeLoanProducts = action.payload?.data?.loanProducts || [];
         state.totalCount = action.payload?.data?.totalCount || 0;
         state.currentPage = action.payload?.data?.currentPage || 1;

@@ -39,3 +39,33 @@
 body {
   font-family: var(--font-sans);
 }
+
+/* paste into globals.css or tailwind global file */
+@keyframes toastEnter {
+  from {
+    transform: translateY(-8px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toastLeave {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-8px) scale(0.98);
+    opacity: 0;
+  }
+}
+
+.animate-enter {
+  animation: toastEnter 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.animate-leave {
+  animation: toastLeave 120ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}

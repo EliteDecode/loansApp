@@ -83,12 +83,12 @@ export default function CustomTable<T extends Record<string, any> = any>({
 
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return sortedData.slice(startIndex, endIndex);
+    return sortedData?.slice(startIndex, endIndex);
   }, [sortedData, currentPage, pageSize, pagination]);
 
   // Calculate pagination info
-  const totalPages = Math.ceil(sortedData.length / pageSize);
-  const totalItems = sortedData.length;
+  const totalPages = Math.ceil(sortedData?.length / pageSize);
+  const totalItems = sortedData?.length;
   const startItem = pagination ? (currentPage - 1) * pageSize + 1 : 1;
   const endItem = pagination
     ? Math.min(currentPage * pageSize, totalItems)
@@ -265,7 +265,7 @@ export default function CustomTable<T extends Record<string, any> = any>({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedData.length === 0 ? (
+            {paginatedData?.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length}
@@ -275,7 +275,7 @@ export default function CustomTable<T extends Record<string, any> = any>({
                 </td>
               </tr>
             ) : (
-              paginatedData.map((row, index) => (
+              paginatedData?.map((row, index) => (
                 <tr
                   key={index}
                   className={`hover:bg-gray-50 ${
