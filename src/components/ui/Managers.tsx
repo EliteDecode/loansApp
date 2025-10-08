@@ -9,7 +9,7 @@ import type { CustomTableColumn } from "@/components/CustomTable/CustomTable.typ
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
 import { getAllManagers } from "@/services/features";
 import type { AppDispatch, RootState } from "@/store";
-import type { CreditAgent } from "@/services/features/agent/agent.types";
+import type { Manager } from "@/services/features/manager/manager.types";
 
 export default function Managers() {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ export default function Managers() {
     dispatch(getAllManagers());
   }, [dispatch]);
 
-  const columns: CustomTableColumn<CreditAgent>[] = [
+  const columns: CustomTableColumn<Manager>[] = [
     {
       header: "MANAGER ID",
       accessor: "managerID",
@@ -37,7 +37,7 @@ export default function Managers() {
     {
       header: "AGENT NAME",
       accessor: "firstName",
-      render: (_: any, row: CreditAgent) => (
+      render: (_: any, row: Manager) => (
         <div className="flex items-center gap-3">
           <img
             src={row.passport || profileImage}
@@ -114,7 +114,7 @@ export default function Managers() {
       accessor: "_id",
       sortable: false,
       width: "120px",
-      render: (_: string, row: CreditAgent) => (
+      render: (_: string, row: Manager) => (
         <Button
           variant="outline"
           height="h-8"
@@ -130,7 +130,7 @@ export default function Managers() {
   ];
 
   // Use real data from Redux state
-  const data = managers;
+  const data = managers || [];
 
   return (
     <div>
@@ -144,28 +144,28 @@ export default function Managers() {
       </div>
 
       <div className="bg-white rounded-xl space-y-[27.5px]">
-        <CustomTable
+        <CustomTable<Manager>
           data={data}
           columns={columns}
           searchable={true}
-          searchPlaceholder="Search by agent ID, name, email, or status"
+          searchPlaceholder="Search by manager ID, name, email, or status"
           searchFields={
             [
-              "creditAgentID",
+              "managerID",
               "firstName",
               "lastName",
               "email",
               "status",
-            ] as (keyof CreditAgent)[]
+            ] as (keyof Manager)[]
           }
           pagination={true}
           pageSize={10}
           showPageSizeSelector={true}
           pageSizeOptions={[5, 10, 20, 50]}
-          emptyMessage="No credit agents found"
+          emptyMessage="No managers found"
           loading={isLoading}
           onRowClick={(row) => {
-            navigate(`/credit-agents/credit-agents-info/${row._id}`);
+            navigate(`/managers/manager-info/${row._id}`);
           }}
         />
       </div>
