@@ -15,14 +15,12 @@ interface DesktopSidebarProps {
 const DesktopSidebar = ({
   setOpenShutdownModal,
   setOpenRestoreModal,
+  isShutdown,
 }: DesktopSidebarProps) => {
   const location = useLocation();
   const { role, user } = useSelector((state: RootState) => state.auth);
   const firstSegment = location.pathname.split("/")[1];
   const filteredSidebarLinks = getFilteredSidebarLinks(role);
-
-  // Remove for later
-  const sysyemDowm = true as boolean;
 
   console.log(user);
 
@@ -71,7 +69,7 @@ const DesktopSidebar = ({
           <div className="mt-8 px-6  text-[14px] leading-[145%]">
             <p className="font-medium text-[#CB1A14]">System Control</p>
 
-            {sysyemDowm === true ? (
+            {isShutdown === true ? (
               <div
                 className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
                 onClick={() => setOpenRestoreModal(true)}

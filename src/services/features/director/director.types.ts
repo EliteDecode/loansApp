@@ -123,6 +123,29 @@ export interface SystemControlRequest {
   reason: string;
 }
 
+export interface SystemStatus {
+  _id: string;
+  __v: number;
+  createdAt: string;
+  updatedAt: string;
+  isShutdown: boolean;
+  shutdownAt: string | null;
+  shutdownBy: string | null;
+  shutdownByRole: string | null;
+  shutdownReason: string | null;
+}
+
+export interface SystemSettings {
+  systemStatus: SystemStatus;
+  lastUpdated: string;
+}
+
+export interface SystemSettingsResponse {
+  success: boolean;
+  message: string;
+  data: SystemSettings;
+}
+
 export interface DirectorListResponse {
   success: boolean;
   message: string;
@@ -143,6 +166,7 @@ export interface DirectorDetailsResponse {
 export interface DirectorState {
   directors: Director[];
   currentDirector: Director | null;
+  settings: SystemSettings | null;
   isLoading: boolean;
   isSuccess: boolean;
   isError: boolean;

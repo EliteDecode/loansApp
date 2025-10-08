@@ -11,6 +11,7 @@ const initialState: DirectorState = {
   currentDirector: currentDirectorFromStorage
     ? JSON.parse(currentDirectorFromStorage)
     : null,
+  settings: null,
   isLoading: false,
   isSuccess: false,
   isError: false,
@@ -95,6 +96,13 @@ export const getDirectorDetails = createAsyncThunkWithHandler(
   "director/getDirectorDetails",
   async (payload: string, _) => {
     return await directorService.getDirectorDetails(payload);
+  }
+);
+
+export const getSystemSettings = createAsyncThunkWithHandler(
+  "director/getSystemSettings",
+  async () => {
+    return await directorService.getSystemSettings();
   }
 );
 
@@ -329,6 +337,28 @@ const directorSlice = createSlice({
         state.message = action.payload?.message || "System shutdown successful";
       })
       .addCase(shutdownSystem.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = false;
+        state.isError = true;
+        state.message = action.payload as string;
+      })
+
+      // Get System Settings
+      .addCase(getSystemSettings.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(getSystemSettings.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.settings = action.payload?.data || null;
+        state.message =
+          action.payload?.message || "System settings retrieved successfully";
+      })
+      .addCase(getSystemSettings.rejected, (state, action) => {
         state.isLoading = false;
         state.isSuccess = false;
         state.isError = true;

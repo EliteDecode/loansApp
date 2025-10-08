@@ -24,6 +24,19 @@ export type { UseClientEditReturn } from "./useClientEditHook/useClientEditHook"
 export { useClientSuspendHook } from "./useClientSuspendHook/useClientSuspendHook";
 export type { UseClientSuspendReturn } from "./useClientSuspendHook/useClientSuspendHook";
 
+// Agent hooks
+export { useAgentAddHook } from "./useAgentAddHook/useAgentAddHook";
+export type {
+  AgentFormValues,
+  UseAgentAddReturn,
+} from "./useAgentAddHook/useAgentAddHook";
+
+export { useAgentEditHook } from "./useAgentEditHook/useAgentEditHook";
+export type {
+  AgentEditFormValues,
+  UseAgentEditReturn,
+} from "./useAgentEditHook/useAgentEditHook";
+
 // Profile hooks
 export { useProfileHook } from "./useProfileHook";
 

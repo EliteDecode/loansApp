@@ -78,16 +78,8 @@ export const createCreditAgent = createAsyncThunkWithHandler(
 
 export const getAllCreditAgents = createAsyncThunkWithHandler(
   "agent/getAllCreditAgents",
-  async (
-    _,
-    payload?: {
-      page?: number;
-      limit?: number;
-      status?: string;
-      search?: string;
-    }
-  ) => {
-    return await agentService.getAllCreditAgents(payload);
+  async (_, __) => {
+    return await agentService.getAllCreditAgents();
   }
 );
 
@@ -209,11 +201,26 @@ const agentSlice = createSlice({
         state.isSuccess = false;
       })
       // Get All Credit Agents
+      .addCase(getAllCreditAgents.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
       .addCase(getAllCreditAgents.fulfilled, (state, action) => {
-        state.creditAgents = action.payload?.data?.creditAgents || [];
-        state.totalCount = action.payload?.data?.totalCount || 0;
-        state.currentPage = action.payload?.data?.currentPage || 1;
-        state.totalPages = action.payload?.data?.totalPages || 1;
+        state.creditAgents = action.payload?.data || [];
+        state.totalCount = action.payload?.data?.length || 0;
+        state.currentPage = 1;
+        state.totalPages = 1;
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+      })
+      .addCase(getAllCreditAgents.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload as string;
+        state.isSuccess = false;
       })
       // Create Credit Agent
       .addCase(createCreditAgent.pending, (state) => {
@@ -222,14 +229,32 @@ const agentSlice = createSlice({
         state.isSuccess = false;
         state.message = "";
       })
-      .addCase(createCreditAgent.fulfilled, (state, action) => {
-        state.message =
-          action.payload?.message || "Credit agent created successfully";
+      .addCase(createCreditAgent.fulfilled, (state, _) => {
+        state.message = "Credit agent created successfully";
         state.isSuccess = true;
         state.isError = false;
         state.isLoading = false;
       })
       .addCase(createCreditAgent.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload as string;
+        state.isSuccess = false;
+      })
+      // Update Credit Agent
+      .addCase(updateCreditAgent.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(updateCreditAgent.fulfilled, (state, _) => {
+        state.isLoading = false;
+        state.isError = false;
+        state.isSuccess = true;
+        state.message = "agent updated successfully";
+      })
+      .addCase(updateCreditAgent.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload as string;

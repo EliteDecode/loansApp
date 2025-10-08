@@ -2,12 +2,18 @@ import { useSelector } from "react-redux";
 import { getFilteredSidebarLinks } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-
+import info from "@/assets/icons/info-triangle-primary.svg";
 import Logo from "../../assets/icons/logo.svg";
 import type { RootState } from "@/store";
 import { Menu, X } from "lucide-react";
 
-const MobileSidebar = ({ isOpen, setIsOpen }: any) => {
+const MobileSidebar = ({
+  isOpen,
+  setIsOpen,
+  isShutdown,
+  setOpenShutdownModal,
+  setOpenRestoreModal,
+}: any) => {
   const location = useLocation();
   const { role } = useSelector((state: RootState) => state.auth);
   const filteredSidebarLinks = getFilteredSidebarLinks(role);
@@ -41,7 +47,7 @@ const MobileSidebar = ({ isOpen, setIsOpen }: any) => {
           </button>
         </div>
 
-        <ul className="mt-[20px]">
+        <ul className="mt-[20px] overflow-y-auto max-h-[calc(100vh-100px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           {filteredSidebarLinks.map((val, i) => {
             const Icon = val.icon;
 
@@ -66,6 +72,35 @@ const MobileSidebar = ({ isOpen, setIsOpen }: any) => {
               </div>
             );
           })}
+
+          {/* System Control - Only visible to Directors */}
+          {role === "director" && (
+            <div className="mt-8 mb-4 px-6  text-[14px] leading-[145%]">
+              <p className="font-medium text-[#CB1A14]">System Control</p>
+
+              {isShutdown === true ? (
+                <div
+                  className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
+                  onClick={() => {
+                    setOpenRestoreModal(true), toggleDrawer();
+                  }}
+                >
+                  <img src={info} />
+                  <p>Restore System</p>
+                </div>
+              ) : (
+                <div
+                  className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
+                  onClick={() => {
+                    setOpenShutdownModal(true), toggleDrawer();
+                  }}
+                >
+                  <img src={info} />
+                  <p>Shutdown System</p>
+                </div>
+              )}
+            </div>
+          )}
         </ul>
       </motion.div>
     </section>

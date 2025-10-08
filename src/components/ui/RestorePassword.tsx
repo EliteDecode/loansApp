@@ -5,7 +5,7 @@ import Button from "../Button/Button";
 import TextInput from "../TextInput/TextInput";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store";
-import { restoreSystem } from "@/services/features";
+import { getSystemSettings, restoreSystem } from "@/services/features";
 import { showErrorToast, showSuccessToast } from "@/lib/toastUtils";
 
 // ✅ Validation schema
@@ -35,6 +35,7 @@ export default function RestorePassword({
         try {
           const res = await dispatch(restoreSystem(values)).unwrap();
           showSuccessToast(res?.message || "System restored successfully."); // friendly message
+          dispatch(getSystemSettings());
           onClose();
         } catch (err: any) {
           const message =

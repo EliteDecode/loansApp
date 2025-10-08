@@ -6,7 +6,7 @@ import Button from "../Button/Button";
 import TextInput from "../TextInput/TextInput";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store";
-import { shutdownSystem } from "@/services/features";
+import { getSystemSettings, shutdownSystem } from "@/services/features";
 import { showErrorToast, showSuccessToast } from "@/lib/toastUtils";
 
 // ✅ Validation schema
@@ -36,6 +36,7 @@ export default function ShutdownPassword({ onClose }: ShutdownPasswordProps) {
         try {
           const res = await dispatch(shutdownSystem(values)).unwrap();
           showSuccessToast(res?.message || "System shutdown successfully.");
+          dispatch(getSystemSettings());
           onClose();
         } catch (err: any) {
           const message =

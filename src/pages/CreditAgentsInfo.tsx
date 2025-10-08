@@ -3,27 +3,34 @@ import arrowLeft from "@/assets/icons/arrow-left.svg";
 import editIcon from "@/assets/icons/edit-icon.svg";
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
 import deactivateIcon from "@/assets/icons/deactivate-icon.svg";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Button from "@/components/Button/Button";
 import { Tab, Tabs } from "@mui/material";
 import CreditAgentOverView from "@/components/ui/CreditAgentOverView";
 import CreditAgentsClients from "@/components/ui/CreditAgentsClients";
 import CreditAgentsLoans from "@/components/ui/CreditAgentsLoans";
 import Modal from "@/components/Modal/Modal";
-import EditAgent from "@/components/ui/EditAgent";
+import { getCreditAgentDetails } from "@/services/features/agent/agentService";
+import type { CreditAgent } from "@/services/features/agent/agent.types";
+import { useProfileHook } from "@/hooks";
 
 export default function CreditAgentsInfo() {
-  const [openEditAgentModal, setOpenEditAgentModal] = useState(false);
   const [openDeactivateAgentModal, setOpenDeactivateAgentModal] =
     useState(false);
+  const [agent, setAgent] = useState<CreditAgent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { id } = useParams<{ id: string }>();
+  const { role } = useProfileHook();
 
   const tabs = [
     { label: "Overview", id: "overview" },
     { label: "Clients", id: "clients" },
     { label: "Loans", id: "loans" },
+    { label: "Finance", id: "finance" },
   ];
 
   // get tab from URL (default to first tab)
@@ -34,6 +41,32 @@ export default function CreditAgentsInfo() {
   const [value, setValue] = useState(
     initialTabIndex !== -1 ? initialTabIndex : 0
   );
+
+  // Fetch agent details
+  useEffect(() => {
+    const fetchAgentDetails = async () => {
+      if (!id) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await getCreditAgentDetails(id);
+
+        if (response.success) {
+          setAgent(response.data);
+        } else {
+          setError(response.message || "Failed to fetch agent details");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAgentDetails();
+  }, [id]);
 
   // update tab state when URL changes (back/forward nav)
   useEffect(() => {
@@ -50,12 +83,39 @@ export default function CreditAgentsInfo() {
     navigate(`?tab=${newTabId}`, { replace: true }); // ✅ updates URL without reload
   };
 
-  const agentDetails = {
-    name: "Ubot Effiong",
-    email: "Uboteffiong@asavictory.com",
-    phoneNumber: "080123456789",
-    status: "active",
-  };
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600 mb-4">{error}</p>
+        <Button onClick={() => navigate("/credit-agents")}>
+          Back to Credit Agents
+        </Button>
+      </div>
+    );
+  }
+
+  // No agent data
+  if (!agent) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600 mb-4">Agent not found</p>
+        <Button onClick={() => navigate("/credit-agents")}>
+          Back to Credit Agents
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="p-6 bg-white space-y-4 rounded-xl">
@@ -72,44 +132,57 @@ export default function CreditAgentsInfo() {
         <div className="flex md:items-center items-start justify-between flex-col md:flex-row gap-4 w-full">
           <div className="flex items-center gap-6 w-full">
             <img
-              src={profileImage}
-              alt=""
+              src={agent.passport || profileImage}
+              alt={`${agent.firstName} ${agent.lastName}`}
               className="w-20 h-20 object-cover rounded-full"
+              onError={(e) => {
+                e.currentTarget.src = profileImage;
+              }}
             />
 
             <div className="space-y-2">
               <h4 className="text-[20px] leading-[120%] tracking-[-2%] text-gray-700 font-semibold">
-                Ubot Effiong
+                {agent.firstName} {agent.lastName}
               </h4>
               <p className="text-[14px] leading-[145%] text-gray-500">
-                Agent ID: #AG001
+                Agent ID: {agent.creditAgentID}
               </p>
-              <div className="py-1 px-3 text-[12px] leading-[145%] text-[#0088FF] bg-[#0088FF1A] w-fit rounded-xl">
-                Agent
+              <div
+                className={`py-1 px-3 text-[12px] leading-[145%] w-fit rounded-xl ${
+                  agent.status === "active"
+                    ? "text-[#0F973D] bg-[#0F973D1A]"
+                    : agent.status === "inactive"
+                    ? "text-[#F3A218] bg-[#F3A2181A]"
+                    : "text-[#CB1A14] bg-[#CB1A141A]"
+                }`}
+              >
+                {agent.status.charAt(0).toUpperCase() + agent.status.slice(1)}
               </div>
             </div>
           </div>
 
-          <div className="space-x-4 space-y-4 w-full">
-            <Button
-              variant="outline"
-              icon={<img src={editIcon} alt="" />}
-              onClick={() => setOpenEditAgentModal(true)}
-              width="md:w-[145px] w-full"
-              height="h-14"
-            >
-              Edit Agent
-            </Button>
-            <Button
-              variant="danger"
-              icon={<img src={deactivateIcon} alt="" />}
-              onClick={() => setOpenDeactivateAgentModal(true)}
-              width="md:w-[198px] w-full"
-              height="h-14"
-            >
-              Deactivate Agent
-            </Button>{" "}
-          </div>
+          {(role === "manager" || role === "director") && (
+            <div className="flex md:flex-row flex-col gap-4 md:ml-auto">
+              <Button
+                variant="outline"
+                icon={<img src={editIcon} alt="" />}
+                onClick={() => navigate(`/credit-agents/edit/${id}`)}
+                width="md:w-[145px] w-full"
+                height="h-14"
+              >
+                Edit Agent
+              </Button>
+              <Button
+                variant="danger"
+                icon={<img src={deactivateIcon} alt="" />}
+                onClick={() => setOpenDeactivateAgentModal(true)}
+                width="md:w-[198px] w-full"
+                height="h-14"
+              >
+                Deactivate Agent
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -165,20 +238,79 @@ export default function CreditAgentsInfo() {
           ))}
         </Tabs>
 
-        {value === 0 && <CreditAgentOverView />}
-        {value === 1 && <CreditAgentsClients />}
-        {value === 2 && <CreditAgentsLoans />}
+        {value === 0 && <CreditAgentOverView agent={agent} />}
+        {value === 1 && <CreditAgentsClients clients={agent?.clients} />}
+        {value === 2 && (
+          <CreditAgentsLoans loanRequests={agent?.loanRequests} />
+        )}
+        {value === 3 && (
+          <div className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Finance Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">
+                  Current Salary
+                </h4>
+                <p className="text-2xl font-bold text-green-600">
+                  ₦
+                  {agent.financeRecord?.currentSalary?.toLocaleString() ||
+                    "N/A"}
+                </p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">
+                  Unpaid Amount
+                </h4>
+                <p className="text-2xl font-bold text-red-600">
+                  ₦
+                  {agent.financeRecord?.totalUnpaidAmount?.toLocaleString() ||
+                    "0"}
+                </p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">
+                  Unpaid Months
+                </h4>
+                <p className="text-lg">
+                  {agent.financeRecord?.unpaidMonths?.length || 0} months
+                </p>
+                {agent.financeRecord?.unpaidMonths?.length > 0 && (
+                  <div className="mt-2">
+                    {agent.financeRecord.unpaidMonths.map((month, index) => (
+                      <span
+                        key={index}
+                        className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded mr-1 mb-1"
+                      >
+                        {month}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">
+                  Payment Records
+                </h4>
+                {agent.financeRecord?.paymentRecords?.length > 0 ? (
+                  <div>
+                    <p className="text-lg font-semibold">
+                      {agent.financeRecord.paymentRecords.length} payments
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Last updated:{" "}
+                      {new Date(
+                        agent.financeRecord.updatedAt
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No payment records</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      <Modal
-        isOpen={openEditAgentModal}
-        onClose={() => setOpenEditAgentModal(false)}
-        closeOnOutsideClick={true} // toggle this
-        title="Edit Agent"
-        maxWidth="max-w-[855px]"
-      >
-        <EditAgent data={agentDetails} />
-      </Modal>
 
       <Modal
         isOpen={openDeactivateAgentModal}
@@ -189,8 +321,8 @@ export default function CreditAgentsInfo() {
       >
         <div className="space-y-8 pt-4 border-t border-gray-200">
           <p className="text-[16px] leading-[145%] text-gray-700">
-            Are you sure you want to deactivate Ubot Effiong? This will restrict
-            access but not delete data.
+            Are you sure you want to deactivate {agent.firstName}{" "}
+            {agent.lastName}? This will restrict access but not delete data.
           </p>
 
           <div className="flex items-center justify-end gap-4 ">

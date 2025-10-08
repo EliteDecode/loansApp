@@ -57,6 +57,11 @@ export const getDirectorDetails = async (directorId: string) => {
   return response.data;
 };
 
+export const getSystemSettings = async () => {
+  const response = await axiosClient.get(`/system-settings`);
+  return response.data;
+};
+
 export const updateDirector = async (directorId: string, data: any) => {
   const response = await axiosClient.put(
     `/director/update/${directorId}`,
@@ -163,6 +168,7 @@ const directorService = {
   createDirector,
   getAllDirectors,
   getDirectorDetails,
+  getSystemSettings,
   updateDirector,
   toggleDirectorStatus,
   deleteDirector,

@@ -1,139 +1,134 @@
 import Button from "@/components/Button/Button";
 import PageHeader from "@/components/PageHeader/PageHeader";
 import add from "@/assets/icons/add.svg";
-import { EllipsisVertical, Search } from "lucide-react";
-import SelectInput from "@/components/SelectInput/SelectInput";
-import { Formik, Form, Field } from "formik";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import dayjs from "dayjs";
-import * as Yup from "yup";
-import type { Column } from "@/components/Table/Table.types";
-import rightArrow from "@/assets/icons/rightArrow.svg";
-import leftArrow from "@/assets/icons/leftArrow.svg";
-import addPrimary from "@/assets/icons/addPrimary.svg";
-import Table from "@/components/Table/Table";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import CustomTable from "@/components/CustomTable/CustomTable";
+import type { CustomTableColumn } from "@/components/CustomTable/CustomTable.types";
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
-
-// ✅ Validation schema
-const validationSchema = Yup.object().shape({
-  startDate: Yup.date().nullable(),
-  endDate: Yup.date()
-    .nullable()
-    .min(Yup.ref("startDate"), "End date cannot be before start date"),
-});
+import { getAllCreditAgents } from "@/services/features";
+import type { AppDispatch, RootState } from "@/store";
+import type { CreditAgent } from "@/services/features/agent/agent.types";
 
 export default function CreditAgents() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const dispatch = useDispatch<AppDispatch>();
 
-  // Parse query params
-  const queryParams = new URLSearchParams(location.search);
-  const searchFromUrl = queryParams.get("search") || "";
-  const statusFromUrl = queryParams.get("status") || "";
-  const startDateFromUrl = queryParams.get("startDate");
-  const endDateFromUrl = queryParams.get("endDate");
+  // Get Redux state
+  const { creditAgents, isLoading } = useSelector(
+    (state: RootState) => state.agent
+  );
 
-  const [age, setAge] = useState("");
+  // Fetch credit agents on component mount
+  useEffect(() => {
+    dispatch(getAllCreditAgents());
+  }, [dispatch]);
 
-  const columns: Column[] = [
-    { header: "AGENT ID", accessor: "name" },
+  const columns: CustomTableColumn<CreditAgent>[] = [
+    {
+      header: "AGENT ID",
+      accessor: "creditAgentID",
+      render: (value: string) => (
+        <span className="font-medium text-gray-900">{value}</span>
+      ),
+    },
     {
       header: "AGENT NAME",
-      accessor: "phoneNumber",
-      render: (_: any, row: any) => (
+      accessor: "firstName",
+      render: (_: any, row: CreditAgent) => (
         <div className="flex items-center gap-3">
           <img
-            src={profileImage}
-            alt=""
-            className="w-10 h-10 object-cover rounded-full "
+            src={row.passport || profileImage}
+            alt={`${row.firstName} ${row.lastName}`}
+            className="w-10 h-10 object-cover rounded-full"
+            onError={(e) => {
+              // Fallback to default image if passport image fails to load
+              e.currentTarget.src = profileImage;
+            }}
           />
-          <p className="max-w-[100px] break-words">{row.name}</p>
+          <div>
+            <p className="font-medium text-gray-900">
+              {row.firstName} {row.lastName}
+            </p>
+            <p className="text-sm text-gray-500">{row.email}</p>
+          </div>
         </div>
       ),
     },
-    { header: "ASSIGNED CLIENTS", accessor: "phoneNumber" },
-    { header: "LOANS HANDLED", accessor: "phoneNumber" },
-    { header: "SUCCESS RATE", accessor: "phoneNumber" },
-
+    {
+      header: "PHONE NUMBER",
+      accessor: "phoneNumber",
+      render: (value: string) => <span className="text-gray-700">{value}</span>,
+    },
+    {
+      header: "EMPLOYMENT TYPE",
+      accessor: "employmentType",
+      render: (value: string) => (
+        <span className="capitalize text-gray-700">
+          {value.replace("-", " ")}
+        </span>
+      ),
+    },
+    {
+      header: "SALARY",
+      accessor: "financeRecord",
+      render: (value: any) => (
+        <span className="text-gray-700 font-medium">
+          {value?.currentSalary
+            ? `₦${value.currentSalary.toLocaleString()}`
+            : "Not Available"}
+        </span>
+      ),
+    },
     {
       header: "STATUS",
       accessor: "status",
       render: (value: string) => (
         <span
-          className={`px-2 text-[12px] leading-[145%] rounded-[12px] ${
+          className={`px-2 py-1 text-[12px] leading-[145%] rounded-[12px] font-medium ${
             {
-              Approved: "bg-[#0F973D1A] text-[#0F973D]",
-              Pending: "bg-[#F3A2181A] text-[#F3A218]",
-              Overdue: "bg-[#CB1A141A] text-[#CB1A14]",
-            }[value] || "bg-gray-100 text-gray-600" // fallback for unknown values
+              active: "bg-[#0F973D1A] text-[#0F973D]",
+              inactive: "bg-[#F3A2181A] text-[#F3A218]",
+              suspended: "bg-[#CB1A141A] text-[#CB1A14]",
+            }[value] || "bg-gray-100 text-gray-600"
           }`}
         >
-          {value}
+          {value.charAt(0).toUpperCase() + value.slice(1)}
         </span>
       ),
     },
-    { header: "LAST ACTION", accessor: "phoneNumber" },
     {
-      header: "",
-      accessor: "date",
-      render: (_: any, row: any) => (
-        <div
-          className="cursor-pointer"
+      header: "DATE CREATED",
+      accessor: "createdAt",
+      render: (value: string) => (
+        <span className="text-gray-700">
+          {new Date(value).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      header: "ACTIONS",
+      accessor: "_id",
+      sortable: false,
+      width: "120px",
+      render: (_: string, row: CreditAgent) => (
+        <Button
+          variant="outline"
+          height="h-8"
+          width="w-24"
           onClick={() =>
-            navigate(`/credit-agents/credit-agents-info/${row.id}`)
+            navigate(`/credit-agents/credit-agents-info/${row._id}`)
           }
         >
-          <EllipsisVertical className="hidden md:block" />
-
-          <p className="block md:hidden text-[14px] leading-[145%] font-semibold text-primary">
-            Details
-          </p>
-        </div>
+          View Details
+        </Button>
       ),
     },
   ];
 
-  const data = [
-    {
-      id: 1,
-      name: "John Yinka",
-      phoneNumber: "08123456789",
-      status: "Approved",
-      date: "2025-09-01",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      phoneNumber: "08098765432",
-      status: "Pending",
-      date: "2025-09-02",
-    },
-    {
-      id: 3,
-      name: "Michael Brown",
-      phoneNumber: "07011223344",
-      status: "Overdue",
-      date: "2025-09-03",
-    },
-    {
-      id: 4,
-      name: "Sophia Johnson",
-      phoneNumber: "09033445566",
-      status: "Active",
-      date: "2025-09-04",
-    },
-    {
-      id: 5,
-      name: "David Williams",
-      phoneNumber: "08155667788",
-      status: "Declined",
-      date: "2025-09-05",
-    },
-  ];
+  // Use real data from Redux state
+  const data = creditAgents;
 
   return (
     <div>
@@ -150,186 +145,31 @@ export default function CreditAgents() {
         </Button>
       </div>
 
-      <div className="bg-white p-6">
-        <Formik
-          initialValues={{
-            search: searchFromUrl,
-            status: statusFromUrl,
-            startDate: startDateFromUrl ? dayjs(startDateFromUrl) : null,
-            endDate: endDateFromUrl ? dayjs(endDateFromUrl) : null,
+      <div className="bg-white rounded-xl space-y-[27.5px]">
+        <CustomTable
+          data={data}
+          columns={columns}
+          searchable={true}
+          searchPlaceholder="Search by agent ID, name, email, or status"
+          searchFields={
+            [
+              "creditAgentID",
+              "firstName",
+              "lastName",
+              "email",
+              "status",
+            ] as (keyof CreditAgent)[]
+          }
+          pagination={true}
+          pageSize={10}
+          showPageSizeSelector={true}
+          pageSizeOptions={[5, 10, 20, 50]}
+          emptyMessage="No credit agents found"
+          loading={isLoading}
+          onRowClick={(row) => {
+            navigate(`/credit-agents/credit-agents-info/${row._id}`);
           }}
-          validationSchema={validationSchema}
-          enableReinitialize
-          onSubmit={(values) => {
-            const params = new URLSearchParams();
-
-            if (values.search) params.set("search", values.search);
-            if (values.status) params.set("status", values.status);
-            if (values.startDate)
-              params.set(
-                "startDate",
-                dayjs(values.startDate).format("YYYY-MM-DD")
-              );
-            if (values.endDate)
-              params.set("endDate", dayjs(values.endDate).format("YYYY-MM-DD"));
-
-            navigate(`?${params.toString()}`, { replace: true });
-          }}
-        >
-          {({
-            values,
-            // handleChange,
-            handleSubmit,
-            setFieldValue,
-            errors,
-            touched,
-          }) => {
-            // Auto submit whenever filters change
-            useEffect(() => {
-              handleSubmit();
-            }, [
-              values.search,
-              values.status,
-              values.startDate,
-              values.endDate,
-            ]);
-
-            return (
-              <Form className="space-y-6">
-                {/* Search Input */}
-                <div className="lg:max-w-full w-full relative">
-                  <Field
-                    name="search"
-                    placeholder="Search agents by name or status"
-                    className="h-10 w-full pl-10 pr-3 outline-0 shadow-[0px_1px_2px_0px_#1018280D] rounded-[6px] text-[14px] leading-[145%] placeholder:text-[#667185] bg-gray-50"
-                  />
-                  <Search
-                    className="absolute top-2 left-3 w-5 h-5"
-                    color="#475367"
-                  />
-                </div>
-
-                {/* Filters */}
-                <div className="grid md:grid-cols-3 grid-cols-1 gap-4">
-                  <SelectInput name="status" label="Status">
-                    <option value="">All Statuses</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </SelectInput>
-
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    {/* Start Date */}
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Start Date
-                      </label>
-                      <DatePicker
-                        value={values.startDate}
-                        onChange={(newValue) => {
-                          setFieldValue("startDate", newValue);
-                          if (
-                            values.endDate &&
-                            newValue &&
-                            dayjs(values.endDate).isBefore(newValue)
-                          ) {
-                            setFieldValue("endDate", null); // auto clear invalid endDate
-                          }
-                        }}
-                        slotProps={{
-                          textField: {
-                            fullWidth: true,
-                            error:
-                              touched.startDate && Boolean(errors.startDate),
-                            helperText: touched.startDate && errors.startDate,
-                          },
-                        }}
-                      />
-                    </div>
-
-                    {/* End Date */}
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        End Date
-                      </label>
-                      <DatePicker
-                        value={values.endDate}
-                        onChange={(newValue) =>
-                          setFieldValue("endDate", newValue)
-                        }
-                        minDate={values.startDate || undefined} // disable before start date
-                        disabled={!values.startDate}
-                        slotProps={{
-                          textField: {
-                            fullWidth: true,
-                            error: touched.endDate && Boolean(errors.endDate),
-                            helperText: touched.endDate && errors.endDate,
-                          },
-                        }}
-                      />
-                    </div>
-                  </LocalizationProvider>
-                </div>
-              </Form>
-            );
-          }}
-        </Formik>
-      </div>
-
-      <div className="bg-white p-6 rounded-xl space-y-[27.5px]">
-        <h1 className="text-[24px] leading-[120%] tracking-[-2%] font-medium text-gray-700">
-          Credit Agents
-        </h1>
-
-        <div className="flex items-center justify-between">
-          <div className="lg:max-w-[517px] w-full relative">
-            <input
-              placeholder="Search by name, phone number, or client ID"
-              className="h-10 w-full pl-10 pr-3 outline-0 bg-[#F9FAFB] shadow-[0px_1px_2px_0px_#1018280D] rounded-[6px] text-[14px] leading-[145%] placeholder:text-[#667185]"
-            />
-
-            <Search className="absolute top-2 left-3 w-5 h-5" color="#475367" />
-          </div>
-
-          <div className="space-x-4 hidden md:block">
-            <select
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              className="py-3 px-4 bg-gray-50 border border-gray-100 rounded-[8px] text-gray-700 text-[16px] leading-[145%] outline-none"
-            >
-              <option value="">Status</option>
-              <option value={10}>Ten</option>xw
-              <option value={20}>Twenty</option>
-              <option value={30}>Thirty</option>
-            </select>
-
-            <select
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              className="py-3 px-4 bg-gray-50 border border-gray-100 rounded-[8px] text-gray-700 text-[16px] leading-[145%] outline-none"
-            >
-              <option value="">Date Added</option>
-              <option value={10}>Ten</option>xw
-              <option value={20}>Twenty</option>
-              <option value={30}>Thirty</option>
-            </select>
-          </div>
-        </div>
-        <Table columns={columns} data={data} />
-        <div className="flex items-center justify-between text-[14px] leadng-[145%] text-gray-700 font-semibold">
-          <button className="sm:px-4 px-2 py-2 flex items-center gap-2 border border-gray-300 rounded-[8px] cursor-pointer">
-            <img src={addPrimary} className="hidden sm:block" />
-            <p className="hidden sm:block">Previous</p>
-            <img src={leftArrow} className="block sm:hidden" />
-          </button>
-
-          <p>Showing 1–20 of 250 clients</p>
-
-          <button className="sm:px-4 px-2 py-2 flex items-center gap-2 border border-gray-300 rounded-[8px] cursor-pointer">
-            <p className="hidden sm:block">Next</p>
-            <img src={addPrimary} className="hidden sm:block" />
-            <img src={rightArrow} className="block sm:hidden" />
-          </button>
-        </div>
+        />
       </div>
     </div>
   );
