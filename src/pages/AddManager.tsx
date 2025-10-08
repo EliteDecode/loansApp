@@ -40,7 +40,7 @@ const steps = [
   "Review",
 ];
 
-export interface AgentFormValues {
+export interface ManagerFormValues {
   firstName: string;
   lastName: string;
   gender: "male" | "female";
@@ -63,7 +63,7 @@ export interface AgentFormValues {
   salaryAmount: string | number;
 }
 
-const initialValues: AgentFormValues = {
+const initialValues: ManagerFormValues = {
   firstName: "",
   lastName: "",
   gender: "male",
@@ -118,7 +118,7 @@ const generatePassword = (): string => {
     .join("");
 };
 
-export default function AddAgent() {
+export default function AddManager() {
   const [activeStep, setActiveStep] = useState(0);
   const [shouldSubmit, setShouldSubmit] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -170,8 +170,8 @@ export default function AddAgent() {
   };
 
   const handleFinish = async (
-    values: AgentFormValues,
-    _helpers?: FormikHelpers<AgentFormValues>
+    values: ManagerFormValues,
+    _helpers?: FormikHelpers<ManagerFormValues>
   ) => {
     // Prepare data for API call
     const agentData = {
@@ -326,7 +326,7 @@ export default function AddAgent() {
     <div className="md:p-8 p-4 pt-0">
       <div className="md:pb-8 mb-4">
         <h1 className="md:text-[28px] text-[18px] md:leading-[120%] leading-[145%] font-semibold tracking-[-2%] text-gray-700">
-          Add New Agent
+          Add New Manager
         </h1>
       </div>
 

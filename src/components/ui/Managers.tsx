@@ -200,6 +200,7 @@ export default function Managers() {
                     icon={<img src={add} />}
                     width="lg:w-[185px] w-full"
                     height="h-14"
+                    onClick={() => navigate("/user-management/manager/new")}
                   >
                     Add New Manager
                   </Button>

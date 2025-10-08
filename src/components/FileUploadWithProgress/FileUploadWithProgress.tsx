@@ -4,17 +4,19 @@ import { uploadToCloudinary, type UploadProgress } from "@/lib/cloudinary";
 interface FileUploadWithProgressProps {
   onFileUploaded: (url: string) => void;
   onUploadError: (error: string) => void;
+  onClearError?: () => void; // ✅ New prop
   accept?: string;
   maxSizeMB?: number;
   label: string;
   className?: string;
-  value?: string; // Add value prop to make it controlled
-  folder?: string; // Add folder prop to customize upload folder
+  value?: string;
+  folder?: string;
 }
 
 export default function FileUploadWithProgress({
   onFileUploaded,
   onUploadError,
+  onClearError, // ✅ Added
   accept = "image/*,application/pdf",
   maxSizeMB = 5,
   label,
@@ -26,7 +28,6 @@ export default function FileUploadWithProgress({
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Use the value prop if provided, otherwise use local state
   const uploadedFile = value || null;
 
   const handleFileSelect = async (
@@ -34,6 +35,9 @@ export default function FileUploadWithProgress({
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // ✅ Clear previous error right when new file is selected
+    onClearError?.();
 
     // Validate file size
     if (file.size > maxSizeMB * 1024 * 1024) {
@@ -63,10 +67,15 @@ export default function FileUploadWithProgress({
         onProgress: (progress: UploadProgress) => {
           setUploadProgress(progress.percentage);
         },
-        folder: folder,
+        folder,
       });
 
       onFileUploaded(result.secure_url);
+
+      // ✅ Trigger Formik to re-render and clear any lingering error
+      setTimeout(() => {
+        onClearError?.();
+      }, 50);
     } catch (error) {
       onUploadError(error instanceof Error ? error.message : "Upload failed");
     } finally {

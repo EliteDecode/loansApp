@@ -19,6 +19,7 @@ export default function CreditAgents() {
   const { creditAgents, isLoading } = useSelector(
     (state: RootState) => state.agent
   );
+  console.log(creditAgents);
 
   // Fetch credit agents on component mount
   useEffect(() => {
@@ -72,14 +73,15 @@ export default function CreditAgents() {
     },
     {
       header: "SALARY",
-      accessor: "financeRecord",
-      render: (value: any) => (
-        <span className="text-gray-700 font-medium">
-          {value?.currentSalary
-            ? `₦${value.currentSalary.toLocaleString()}`
-            : "Not Available"}
-        </span>
-      ),
+      accessor: "salary",
+      render: (value: any) => {
+        const salary = value?.amount ?? null;
+        return (
+          <span className="text-gray-700 font-medium">
+            {salary !== null ? `₦${salary.toLocaleString()}` : "Not Available"}
+          </span>
+        );
+      },
     },
     {
       header: "STATUS",
