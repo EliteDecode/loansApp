@@ -11,6 +11,7 @@ const initialState: DirectorState = {
   currentDirector: currentDirectorFromStorage
     ? JSON.parse(currentDirectorFromStorage)
     : null,
+  managers: [], //change later
   settings: null,
   isLoading: false,
   isSuccess: false,
@@ -363,7 +364,53 @@ const directorSlice = createSlice({
         state.isSuccess = false;
         state.isError = true;
         state.message = action.payload as string;
+      })
+
+      // Create Director
+      .addCase(createManager.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(createManager.fulfilled, (state, action) => {
+        state.message =
+          action.payload?.message || "Director created successfully";
+        state.isSuccess = true;
+        state.isError = false;
+        state.isLoading = false;
+      })
+      .addCase(createManager.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload as string;
+        state.isSuccess = false;
+      })
+
+      // 🧭 Get All Managers
+      .addCase(getAllManagers.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(getAllManagers.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.managers = action.payload?.data || [];
+        state.message =
+          action.payload?.message || "Managers retrieved successfully.";
+      })
+      .addCase(getAllManagers.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = false;
+        state.isError = true;
+        state.message =
+          action.payload?.message ||
+          "Failed to retrieve managers. Please try again.";
       });
+
     // Logout - Now handled by auth service
   },
 });
