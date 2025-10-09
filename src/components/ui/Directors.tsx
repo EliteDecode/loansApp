@@ -7,37 +7,38 @@ import { useDispatch, useSelector } from "react-redux";
 import CustomTable from "@/components/CustomTable/CustomTable";
 import type { CustomTableColumn } from "@/components/CustomTable/CustomTable.types";
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
-import { getAllManagers } from "@/services/features";
+import { getAllDirectors, getAllManagers } from "@/services/features";
 import type { AppDispatch, RootState } from "@/store";
 import type { Manager } from "@/services/features/manager/manager.types";
+import type { Director } from "@/services/features/director/director.types";
 
-export default function Managers() {
+export default function Directors() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
   // Get Redux state
-  const { managers, isLoading } = useSelector(
+  const { directors, isLoading } = useSelector(
     (state: RootState) => state.director
   );
-  console.log(managers);
+  console.log(directors);
 
   // Fetch credit agents on component mount
   useEffect(() => {
-    dispatch(getAllManagers());
+    dispatch(getAllDirectors());
   }, [dispatch]);
 
   const columns: CustomTableColumn<Manager>[] = [
     {
-      header: "MANAGER ID",
-      accessor: "managerID",
+      header: "DIRECTOR ID",
+      accessor: "directorID",
       render: (value: string) => (
         <span className="font-medium text-gray-900">{value}</span>
       ),
     },
     {
-      header: "AGENT NAME",
+      header: "DIRECTOR NAME",
       accessor: "firstName",
-      render: (_: any, row: Manager) => (
+      render: (_: any, row: Director) => (
         <div className="flex items-center gap-3">
           <img
             src={row.passport || profileImage}
@@ -130,28 +131,28 @@ export default function Managers() {
   ];
 
   // Use real data from Redux state
-  const data = managers || [];
+  const data = directors || [];
 
   return (
     <div>
       <div className="flex items-center mb-5 justify-end">
         <Button
           icon={<img src={add} alt="add" />}
-          onClick={() => navigate("/user-management/manager/new")}
+          onClick={() => navigate("/user-management/director/new")}
         >
-          Add New Manager
+          Add New Director
         </Button>
       </div>
 
       <div className="bg-white rounded-xl space-y-[27.5px]">
-        <CustomTable<Manager>
+        <CustomTable<Director>
           data={data}
           columns={columns}
           searchable={true}
           searchPlaceholder="Search by manager ID, name, email, or status"
           searchFields={
             [
-              "managerID",
+              "directorID",
               "firstName",
               "lastName",
               "email",
@@ -162,7 +163,7 @@ export default function Managers() {
           pageSize={10}
           showPageSizeSelector={true}
           pageSizeOptions={[5, 10, 20, 50]}
-          emptyMessage="No managers found"
+          emptyMessage="No directors found"
           loading={isLoading}
           onRowClick={(row) => {
             navigate(`/managers/manager-info/${row._id}`);

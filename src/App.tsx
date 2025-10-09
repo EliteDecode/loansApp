@@ -36,6 +36,7 @@ import Finance from "./pages/Finance";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import { RoleRoute } from "./routes/RoleRoute";
 import AddManager from "./pages/AddManager";
+import AddDirector from "./pages/AddDirector";
 
 function App() {
   const { role } = useSelector((state: RootState) => state.auth);
@@ -101,6 +102,15 @@ function App() {
           element={
             <RoleRoute allowedRoles={["director"]}>
               <AddManager />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="user-management/director/new"
+          element={
+            <RoleRoute allowedRoles={["director"]}>
+              <AddDirector />
             </RoleRoute>
           }
         />

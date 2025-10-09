@@ -299,7 +299,7 @@ const directorSlice = createSlice({
       })
       // Get All Directors
       .addCase(getAllDirectors.fulfilled, (state, action) => {
-        state.directors = action.payload?.data?.directors || [];
+        state.directors = action.payload?.data || [];
         state.totalCount = action.payload?.data?.totalCount || 0;
         state.currentPage = action.payload?.data?.currentPage || 1;
         state.totalPages = action.payload?.data?.totalPages || 1;

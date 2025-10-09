@@ -48,7 +48,8 @@ export const getAllDirectors = async (params?: {
   status?: string;
   search?: string;
 }) => {
-  const response = await axiosClient.get("/director/", { params });
+  const response = await axiosClient.get("/director", { params });
+  console.log(response);
   return response.data;
 };
 
