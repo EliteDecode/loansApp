@@ -37,6 +37,9 @@ import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import { RoleRoute } from "./routes/RoleRoute";
 import AddManager from "./pages/AddManager";
 import AddDirector from "./pages/AddDirector";
+import ManagersInfo from "./pages/ManagersInfo";
+import DirectionsInfo from "./pages/DirectionsInfo";
+import EditManager from "./pages/EditManager";
 
 function App() {
   const { role } = useSelector((state: RootState) => state.auth);
@@ -116,6 +119,24 @@ function App() {
         />
 
         <Route
+          path="user-management/managers-info/:id"
+          element={
+            <RoleRoute allowedRoles={["director", "manager"]}>
+              <ManagersInfo />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="user-management/director-info/:id"
+          element={
+            <RoleRoute allowedRoles={["director", "manager"]}>
+              <DirectionsInfo />
+            </RoleRoute>
+          }
+        />
+
+        <Route
           path="finance"
           element={
             <RoleRoute allowedRoles={["director", "manager"]}>
@@ -148,11 +169,21 @@ function App() {
             </RoleRoute>
           }
         />
+
         <Route
           path="credit-agents/edit/:id"
           element={
             <RoleRoute allowedRoles={["director", "manager"]}>
               <EditAgent />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="user-management/manager/edit/:id"
+          element={
+            <RoleRoute allowedRoles={["director"]}>
+              <EditManager />
             </RoleRoute>
           }
         />

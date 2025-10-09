@@ -120,9 +120,7 @@ export default function Directors() {
           variant="outline"
           height="h-8"
           width="w-24"
-          onClick={() =>
-            navigate(`/credit-agents/credit-agents-info/${row._id}`)
-          }
+          onClick={() => navigate(`/user-management/director-info/${row._id}`)}
         >
           View Details
         </Button>
@@ -166,7 +164,7 @@ export default function Directors() {
           emptyMessage="No directors found"
           loading={isLoading}
           onRowClick={(row) => {
-            navigate(`/managers/manager-info/${row._id}`);
+            navigate(`/user-management/director-info/${row._id}`);
           }}
         />
       </div>

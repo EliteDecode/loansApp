@@ -409,6 +409,26 @@ const directorSlice = createSlice({
         state.message =
           action.payload?.message ||
           "Failed to retrieve managers. Please try again.";
+      })
+
+      // Update Credit Agent
+      .addCase(updateManager.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(updateManager.fulfilled, (state, _) => {
+        state.isLoading = false;
+        state.isError = false;
+        state.isSuccess = true;
+        state.message = "manager updated successfully";
+      })
+      .addCase(updateManager.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload as string;
+        state.isSuccess = false;
       });
 
     // Logout - Now handled by auth service

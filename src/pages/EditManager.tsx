@@ -13,7 +13,6 @@ import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import Button from "@/components/Button/Button";
-import { useAgentEditHook } from "@/hooks";
 import SuccessModal from "@/components/modals/SuccessModal/SuccessModal";
 import ErrorModal from "@/components/modals/ErrorModal/ErrorModal";
 import FileUploadWithProgress from "@/components/FileUploadWithProgress/FileUploadWithProgress";
@@ -21,16 +20,18 @@ import { ErrorMessage } from "formik";
 import verified from "@/assets/icons/verifiedBlue.svg";
 import TextInput from "@/components/TextInput/TextInput";
 import SelectInput from "@/components/SelectInput/SelectInput";
+import { useManagerEditHook } from "@/hooks/useManagerEditHook/useManagerEditHook";
 
 const steps = ["Personal Info", "Work & Role Details", "Document Uploads"];
 
-export default function EditAgent() {
+export default function EditManager() {
   const [shouldSubmit, setShouldSubmit] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const navigate = useNavigate();
+  console.log("working");
 
   const {
-    agent,
+    manager,
     isLoading,
     showSuccessModal,
     showErrorModal,
@@ -39,9 +40,9 @@ export default function EditAgent() {
     handleSuccessModalClose,
     handleErrorModalClose,
     validationSchemas,
-  } = useAgentEditHook();
+  } = useManagerEditHook();
 
-  console.log(agent);
+  console.log(manager);
 
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
@@ -51,23 +52,23 @@ export default function EditAgent() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading agent details...</p>
+          <p className="mt-4 text-gray-600">Loading manager details...</p>
         </div>
       </div>
     );
   }
 
-  if (!agent) {
+  if (!manager) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-600">Agent not found</p>
+          <p className="text-red-600">manager not found</p>
           <Button
             variant="outline"
-            onClick={() => navigate("/credit-agents")}
+            onClick={() => navigate("/credit-managers")}
             className="mt-4"
           >
-            Back to Agents
+            Back to managers
           </Button>
         </div>
       </div>
@@ -75,26 +76,26 @@ export default function EditAgent() {
   }
 
   const initialValues = {
-    firstName: agent.firstName || "",
-    lastName: agent.lastName || "",
-    gender: agent.gender || "",
-    dateOfBirth: agent.dateOfBirth ? dayjs(agent.dateOfBirth) : dayjs(),
-    email: agent.email || "",
-    phoneNumber: agent.phoneNumber || "",
-    residentialAddress: agent.residentialAddress || "",
-    stateOfResidence: agent.stateOfResidence || "",
-    lgaOfResidence: agent.lgaOfResidence || "",
-    bankName: agent.bankName || "",
-    bankAccount: agent.bankAccount || "",
-    employmentType: agent.employmentType || "",
-    dateOfEmployment: agent.dateOfEmployment
-      ? dayjs(agent.dateOfEmployment)
+    firstName: manager.firstName || "",
+    lastName: manager.lastName || "",
+    gender: manager.gender || "",
+    dateOfBirth: manager.dateOfBirth ? dayjs(manager.dateOfBirth) : dayjs(),
+    email: manager.email || "",
+    phoneNumber: manager.phoneNumber || "",
+    residentialAddress: manager.residentialAddress || "",
+    stateOfResidence: manager.stateOfResidence || "",
+    lgaOfResidence: manager.lgaOfResidence || "",
+    bankName: manager.bankName || "",
+    bankAccount: manager.bankAccount || "",
+    employmentType: manager.employmentType || "",
+    dateOfEmployment: manager.dateOfEmployment
+      ? dayjs(manager.dateOfEmployment)
       : dayjs(),
-    salaryAmount: agent.salaryAmount || "",
-    validNIN: agent.validNIN || "",
-    utilityBill: agent.utilityBill || "",
-    passport: agent.passport || "",
-    employmentLetter: agent.employmentLetter || "",
+    salaryAmount: manager.salaryAmount || "",
+    validNIN: manager.validNIN || "",
+    utilityBill: manager.utilityBill || "",
+    passport: manager.passport || "",
+    employmentLetter: manager.employmentLetter || "",
   };
 
   function CustomStepIcon({ active, completed }: StepIconProps) {
@@ -129,7 +130,7 @@ export default function EditAgent() {
       <div className="md:p-8 p-4 pt-0">
         <div className="md:pb-8 mb-4">
           <h1 className="md:text-[28px] text-[18px] font-semibold text-gray-700">
-            Edit Agent
+            Edit manager
           </h1>
         </div>
 
@@ -170,9 +171,9 @@ export default function EditAgent() {
         <SuccessModal
           open={showSuccessModal}
           onClose={handleSuccessModalClose}
-          title="Agent Updated Successfully!"
-          message="The agent information has been updated successfully."
-          confirmText="View Agents"
+          title="Manager Updated Successfully!"
+          message="The manager information has been updated successfully."
+          confirmText="View Managers"
           onConfirm={handleSuccessModalClose}
         />
 
@@ -290,7 +291,7 @@ export default function EditAgent() {
                                 name={field.name}
                                 value={displayValue}
                                 onChange={handleChange}
-                                placeholder="Enter agent's phone number (+234XXXXXXXXXX)"
+                                placeholder="Enter manager's phone number (+234XXXXXXXXXX)"
                                 className="w-full h-14 px-4 outline-primary border rounded-[6px] placeholder:text-gray-400 focus:outline-none"
                               />
                               <ErrorMessage
@@ -381,7 +382,7 @@ export default function EditAgent() {
                                   .replace(/([A-Z])/g, " $1")
                                   .replace(/^./, (s) => s.toUpperCase())}
                                 accept="image/*,application/pdf"
-                                folder="loan-app/agents"
+                                folder="loan-app/managers"
                                 value={field.value}
                                 onFileUploaded={(url) =>
                                   form.setFieldValue(field.name, url)
@@ -421,7 +422,7 @@ export default function EditAgent() {
                         type="submit"
                         disabled={isSubmitting || isLoading}
                       >
-                        {isSubmitting ? "Saving..." : "Update Agent"}
+                        {isSubmitting ? "Saving..." : "Update manager"}
                       </Button>
                     ) : (
                       <Button

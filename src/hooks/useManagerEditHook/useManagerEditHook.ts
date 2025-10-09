@@ -1,0 +1,171 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { managerEditValidationSchemas } from "../helpers/validationSchemas";
+
+import type { AppDispatch, RootState } from "@/store";
+import type { Manager } from "@/services/features/manager/manager.types";
+import { getManagerDetails } from "@/services/features/director/directorService";
+import { resetDirector, updateManager } from "@/services/features";
+
+// Manager edit form values type
+export interface ManagerEditFormValues {
+  firstName: string;
+  lastName: string;
+  gender: string;
+  dateOfBirth: any;
+  email: string;
+  phoneNumber: string;
+  residentialAddress: string;
+  stateOfResidence: string;
+  lgaOfResidence: string;
+  bankName: string;
+  bankAccount: string;
+  employmentType: string;
+  dateOfEmployment: any;
+  validNIN: string;
+  utilityBill: string;
+  passport: string;
+  employmentLetter: string;
+}
+
+// Manager edit hook return type
+export interface UseManagerEditReturn {
+  // State
+  manager: Manager | null;
+  isLoading: boolean;
+  isUpdating: boolean;
+  showSuccessModal: boolean;
+  showErrorModal: boolean;
+  errorMessage: string;
+
+  // Actions
+  handleFinish: (values: ManagerEditFormValues) => Promise<void>;
+  handleSuccessModalClose: () => void;
+  handleErrorModalClose: () => void;
+
+  // Validation
+  validationSchemas: typeof managerEditValidationSchemas;
+}
+
+export const useManagerEditHook = (): UseManagerEditReturn => {
+  console.log("working");
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Local state for manager editing
+  const [manager, setManager] = useState<Manager | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Redux manager update state
+  const {
+    isLoading: isUpdating,
+    isSuccess,
+    isError,
+    message,
+  } = useSelector((state: RootState) => state.director);
+
+  // Reset state on mount
+  useEffect(() => {
+    dispatch(resetDirector());
+  }, [dispatch]);
+
+  // Handle success
+  useEffect(() => {
+    if (isSuccess && message === "manager updated successfully") {
+      setShowSuccessModal(true);
+    }
+  }, [isSuccess, message]);
+
+  // Handle error
+  useEffect(() => {
+    if (isError && message) {
+      setErrorMessage(message);
+      setShowErrorModal(true);
+    }
+  }, [isError, message]);
+
+  // Fetch manager details
+  useEffect(() => {
+    const fetchManagerDetails = async () => {
+      if (!id) return;
+      try {
+        setIsLoading(true);
+        const response = await getManagerDetails(id);
+        console.log(response);
+        console.log(id);
+        if (response.success) {
+          setManager(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching manager details:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchManagerDetails();
+  }, [id]);
+
+  // Handle manager update
+  const handleFinish = async (values: ManagerEditFormValues): Promise<void> => {
+    if (!id) return;
+
+    const updateData = {
+      firstName: values.firstName,
+      lastName: values.lastName,
+      gender: values.gender,
+      dateOfBirth: values.dateOfBirth.toISOString(),
+      email: values.email,
+      phoneNumber: values.phoneNumber,
+      residentialAddress: values.residentialAddress,
+      stateOfResidence: values.stateOfResidence,
+      lgaOfResidence: values.lgaOfResidence,
+      bankName: values.bankName,
+      bankAccount: values.bankAccount,
+      employmentType: values.employmentType,
+      dateOfEmployment: values.dateOfEmployment.toISOString(),
+      validNIN: values.validNIN,
+      utilityBill: values.utilityBill,
+      passport: values.passport,
+      employmentLetter: values.employmentLetter,
+    };
+
+    dispatch(updateManager({ managerId: id, data: updateData }));
+  };
+
+  // Handle success modal close
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    dispatch(resetDirector());
+    navigate("/user-management?tab=managers");
+  };
+
+  // Handle error modal close
+  const handleErrorModalClose = () => {
+    setShowErrorModal(false);
+    setErrorMessage("");
+    dispatch(resetDirector());
+  };
+
+  return {
+    // State
+    manager,
+    isLoading,
+    isUpdating,
+    showSuccessModal,
+    showErrorModal,
+    errorMessage,
+
+    // Actions
+    handleFinish,
+    handleSuccessModalClose,
+    handleErrorModalClose,
+
+    // Validation
+    validationSchemas: managerEditValidationSchemas,
+  };
+};
