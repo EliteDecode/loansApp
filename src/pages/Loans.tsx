@@ -1,19 +1,19 @@
 import PageHeader from "@/components/PageHeader/PageHeader";
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import type { RootState } from "@/store";
+import type { RootState, AppDispatch } from "@/store";
 import {
   getAllLoanRequests,
   getMyLoanRequests,
-} from "@/services/features/loanRequest/loanRequestService";
+} from "@/services/features/loanRequest/loanRequestSlice";
 import CustomTable from "@/components/CustomTable/CustomTable";
 import type { CustomTableColumn } from "@/components/CustomTable/CustomTable.types";
 import Button from "@/components/Button/Button";
+import type { LoanRequest } from "@/services/features/loanRequest/loanRequest.types";
 
-// Loan Request interface based on the API response
-interface LoanRequest {
-  _id: string;
+// Extended interface for the detailed loan request response
+interface DetailedLoanRequest extends LoanRequest {
   requestID: string;
   clientId: {
     _id: string;
@@ -29,20 +29,6 @@ interface LoanRequest {
     minLoanAmount: number;
     maxLoanAmount: number;
   };
-  loanAmount: number;
-  loanTenure: number;
-  tenureUnit: string;
-  repaymentFrequency: string;
-  repaymentStartDate: string;
-  loanPurpose: string;
-  clientAccountNumber: string;
-  clientBankName: string;
-  collateralDescription: string;
-  supportingDocuments: string[];
-  status: string;
-  createdBy: string;
-  createdByRole: string;
-  createdByModel: string;
   interestRate: number;
   penaltyRate: number;
   gracePeriod: number;
@@ -50,51 +36,35 @@ interface LoanRequest {
   paymentAmount: number;
   totalPayments: number;
   totalRepaymentAmount: number;
-  createdAt: string;
-  updatedAt: string;
+  createdByModel: string;
 }
 
 export default function Loans() {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const { role } = useSelector((state: RootState) => state.auth);
-  const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
+
+  // Get loan request data from Redux store
+  const { loanRequests, myLoanRequests, isFetching, isError, message } =
+    useSelector((state: RootState) => state.loanRequest);
+
+  const currentLoanRequests = activeTab === 0 ? myLoanRequests : loanRequests;
+  const error = isError ? message : null;
 
   // Fetch loan requests based on user role and active tab
   useEffect(() => {
-    const fetchLoanRequests = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        let response;
-        if (role === "creditAgent") {
-          response = await getMyLoanRequests();
-        } else {
-          // Directors and Managers can switch between "My" and "All" loan requests
-          if (activeTab === 0) {
-            response = await getMyLoanRequests();
-          } else {
-            response = await getAllLoanRequests();
-          }
-        }
-
-        if (response.success) {
-          setLoanRequests(response.data.loanRequests);
-        } else {
-          setError(response.message || "Failed to fetch loan requests");
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
+    if (role === "creditAgent") {
+      dispatch(getMyLoanRequests());
+    } else {
+      // Directors and Managers can switch between "My" and "All" loan requests
+      if (activeTab === 0) {
+        dispatch(getMyLoanRequests());
+      } else {
+        dispatch(getAllLoanRequests());
       }
-    };
-
-    fetchLoanRequests();
-  }, [role, activeTab]);
+    }
+  }, [role, activeTab, dispatch]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -115,13 +85,13 @@ export default function Loans() {
   };
 
   // Table columns
-  const columns: CustomTableColumn<LoanRequest>[] = [
+  const columns: CustomTableColumn<DetailedLoanRequest>[] = [
     {
       header: "CLIENT",
       accessor: "clientId",
       sortable: true,
       width: "200px",
-      render: (value: any, row: LoanRequest) => (
+      render: (value: any, row: DetailedLoanRequest) => (
         <div>
           <div className="font-medium text-gray-900">
             {value.firstName} {value.lastName}
@@ -161,7 +131,7 @@ export default function Loans() {
       accessor: "loanTenure",
       sortable: true,
       width: "120px",
-      render: (value: number, row: LoanRequest) => (
+      render: (value: number, row: DetailedLoanRequest) => (
         <span className="text-gray-700">
           {value} {row.tenureUnit}
         </span>
@@ -172,7 +142,7 @@ export default function Loans() {
       accessor: "totalRepaymentAmount",
       sortable: true,
       width: "160px",
-      render: (value: number, row: LoanRequest) => (
+      render: (value: number, row: DetailedLoanRequest) => (
         <div>
           <div className="font-medium text-gray-900">
             {formatCurrency(value)}
@@ -219,7 +189,7 @@ export default function Loans() {
       accessor: "_id",
       sortable: false,
       width: "120px",
-      render: (value: string, row: LoanRequest) => (
+      render: (value: string, row: DetailedLoanRequest) => (
         <Button
           variant="outline"
           height="h-8"
@@ -233,7 +203,7 @@ export default function Loans() {
   ];
 
   // Loading state
-  if (isLoading) {
+  if (isFetching) {
     return (
       <div>
         <PageHeader
@@ -314,7 +284,7 @@ export default function Loans() {
 
         {/* Custom Table */}
         <CustomTable
-          data={loanRequests}
+          data={currentLoanRequests}
           columns={columns}
           searchable={true}
           searchPlaceholder="Search by request ID, client name, or status"
@@ -324,7 +294,7 @@ export default function Loans() {
           showPageSizeSelector={true}
           pageSizeOptions={[5, 10, 20, 50]}
           emptyMessage="No loan requests found"
-          loading={isLoading}
+          loading={isFetching}
           onRowClick={(row) => {
             // TODO: Navigate to loan request details
             console.log("Navigate to loan request:", row._id);

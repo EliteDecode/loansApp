@@ -94,36 +94,36 @@ export default function EditClient() {
 
   // Convert client data to form values
   const formInitialValues: ClientFormValues = {
-    firstName: clientData.firstName || "",
-    lastName: clientData.lastName || "",
-    gender: clientData.gender || "",
-    dateOfBirth: clientData.dateOfBirth
-      ? new Date(clientData.dateOfBirth)
+    firstName: clientData?.firstName || "",
+    lastName: clientData?.lastName || "",
+    gender: clientData?.gender || "",
+    dateOfBirth: clientData?.dateOfBirth
+      ? new Date(clientData?.dateOfBirth)
       : null,
-    email: clientData.email || "",
-    phoneNumber: clientData.phoneNumber || "",
-    residentialAddress: clientData.residentialAddress || "",
-    stateOfResidence: clientData.stateOfResidence || "",
-    lgaOfResidence: clientData.lgaOfResidence || "",
-    employmentType: clientData.employmentType || "",
-    occupationOrBusinessType: clientData.occupationOrBusinessType || "",
-    monthlyIncome: clientData.monthlyIncome?.toString() || "",
-    employer: clientData.employer || "",
-    workAddress: clientData.workAddress || "",
-    yearsInBusiness: clientData.yearsInBusiness?.toString() || "",
-    guarantorFullName: clientData.guarantorFullName || "",
-    guarantorRelationship: clientData.guarantorRelationship || "",
-    guarantorPhoneNumber: clientData.guarantorPhoneNumber || "",
-    guarantorAddress: clientData.guarantorAddress || "",
-    secondaryGuarantorFullName: clientData.secondaryGuarantorFullName || "",
+    email: clientData?.email || "",
+    phoneNumber: clientData?.phoneNumber || "",
+    residentialAddress: clientData?.residentialAddress || "",
+    stateOfResidence: clientData?.stateOfResidence || "",
+    lgaOfResidence: clientData?.lgaOfResidence || "",
+    employmentType: clientData?.employmentType || "",
+    occupationOrBusinessType: clientData?.occupationOrBusinessType || "",
+    monthlyIncome: clientData?.monthlyIncome?.toString() || "",
+    employer: clientData?.employer || "",
+    workAddress: clientData?.workAddress || "",
+    yearsInBusiness: clientData?.yearsInBusiness?.toString() || "",
+    guarantorFullName: clientData?.guarantorFullName || "",
+    guarantorRelationship: clientData?.guarantorRelationship || "",
+    guarantorPhoneNumber: clientData?.guarantorPhoneNumber || "",
+    guarantorAddress: clientData?.guarantorAddress || "",
+    secondaryGuarantorFullName: clientData?.secondaryGuarantorFullName || "",
     secondaryGuarantorRelationship:
-      clientData.secondaryGuarantorRelationship || "",
+      clientData?.secondaryGuarantorRelationship || "",
     secondaryGuarantorPhoneNumber:
-      clientData.secondaryGuarantorPhoneNumber || "",
-    secondaryGuarantorAddress: clientData.secondaryGuarantorAddress || "",
-    validNIN: clientData.validNIN || "",
-    utilityBill: clientData.utilityBill || "",
-    passport: clientData.passport || "",
+      clientData?.secondaryGuarantorPhoneNumber || "",
+    secondaryGuarantorAddress: clientData?.secondaryGuarantorAddress || "",
+    validNIN: clientData?.validNIN || "",
+    utilityBill: clientData?.utilityBill || "",
+    passport: clientData?.passport || "",
   };
 
   return (

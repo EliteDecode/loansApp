@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { clientValidationSchemas } from "../helpers/validationSchemas";
-import { createClient } from "@/services/features/client/clientService";
+import { createClient } from "@/services/features/client/clientSlice";
 import type { ClientCreateRequest } from "@/services/features/client/client.types";
+import type { AppDispatch } from "@/store";
 
 // Client form values type
 export interface ClientFormValues {
@@ -53,6 +55,7 @@ export interface UseClientAddReturn {
 
 export const useClientAddHook = (): UseClientAddReturn => {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
 
   // Local state for client creation
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,12 +102,12 @@ export const useClientAddHook = (): UseClientAddReturn => {
         passport: values.passport,
       };
 
-      const response = await createClient(clientData);
+      const response = await dispatch(createClient(clientData));
 
-      if (response.success) {
+      if (response.payload?.success) {
         setShowSuccessModal(true);
       } else {
-        setErrorMessage(response.message || "Failed to create client");
+        setErrorMessage(response.payload?.message || "Failed to create client");
         setShowErrorModal(true);
       }
     } catch (error) {

@@ -163,6 +163,7 @@ export interface AgentState {
   creditAgents: CreditAgent[];
   currentAgent: CreditAgent | null;
   isLoading: boolean;
+  isFetching: boolean;
   isSuccess: boolean;
   isError: boolean;
   message: string;

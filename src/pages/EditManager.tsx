@@ -42,8 +42,6 @@ export default function EditManager() {
     validationSchemas,
   } = useManagerEditHook();
 
-  console.log(manager);
-
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
 
@@ -91,7 +89,6 @@ export default function EditManager() {
     dateOfEmployment: manager.dateOfEmployment
       ? dayjs(manager.dateOfEmployment)
       : dayjs(),
-    salaryAmount: manager.salaryAmount || "",
     validNIN: manager.validNIN || "",
     utilityBill: manager.utilityBill || "",
     passport: manager.passport || "",
@@ -115,13 +112,7 @@ export default function EditManager() {
       "stateOfResidence",
       "lgaOfResidence",
     ],
-    [
-      "bankName",
-      "bankAccount",
-      "employmentType",
-      "dateOfEmployment",
-      "salaryAmount",
-    ],
+    ["bankName", "bankAccount", "employmentType", "dateOfEmployment"],
     ["validNIN", "utilityBill", "passport", "employmentLetter"],
   ];
 
@@ -193,7 +184,7 @@ export default function EditManager() {
               validationSchema={validationSchemas[activeStep]}
               onSubmit={(values, formikHelpers) => {
                 if (shouldSubmit && activeStep === steps.length - 1) {
-                  handleFinish(values, formikHelpers);
+                  handleFinish(values);
                 } else {
                   formikHelpers.setSubmitting(false);
                 }
@@ -355,13 +346,6 @@ export default function EditManager() {
                           className="text-red-500 text-xs"
                         />
                       </div>
-
-                      {/* <TextInput
-                        name="salaryAmount"
-                        label="Salary Amount"
-                        amount={true}
-                        type="tel"
-                      /> */}
                     </div>
                   )}
 

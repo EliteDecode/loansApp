@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { clientValidationSchemas } from "../helpers/validationSchemas";
 import {
   updateClient,
   getClientDetails,
-} from "@/services/features/client/clientService";
+} from "@/services/features/client/clientSlice";
 import type {
   ClientCreateRequest,
   Client,
 } from "@/services/features/client/client.types";
+import type { RootState, AppDispatch } from "@/store";
 
 // Client form values type (same as add client)
 export interface ClientFormValues {
@@ -61,43 +63,36 @@ export interface UseClientEditReturn {
 
 export const useClientEditHook = (): UseClientEditReturn => {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
+
+  // Get client data from Redux store
+  const { currentClient, isFetching, isError, message } = useSelector(
+    (state: RootState) => state.client
+  );
 
   // Local state for client editing
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [clientData, setClientData] = useState<Client | null>(null);
 
-  // Fetch client data on mount
+  const clientData = currentClient as Client | null;
+
+  // Fetch client data using Redux
   useEffect(() => {
-    const fetchClientData = async () => {
-      if (!id) return;
+    if (id) {
+      dispatch(getClientDetails(id));
+    }
+  }, [id, dispatch]);
 
-      try {
-        setIsLoading(true);
-        const response = await getClientDetails(id);
-
-        if (response.success) {
-          setClientData(response.data);
-        } else {
-          setErrorMessage(response.message || "Failed to fetch client details");
-          setShowErrorModal(true);
-        }
-      } catch (err) {
-        setErrorMessage(
-          err instanceof Error ? err.message : "An error occurred"
-        );
-        setShowErrorModal(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchClientData();
-  }, [id]);
+  // Handle error state
+  useEffect(() => {
+    if (isError && message) {
+      setErrorMessage(message);
+      setShowErrorModal(true);
+    }
+  }, [isError, message]);
 
   // Handle client update
   const handleFinish = async (values: ClientFormValues): Promise<void> => {
@@ -140,12 +135,14 @@ export const useClientEditHook = (): UseClientEditReturn => {
         passport: values.passport,
       };
 
-      const response = await updateClient(id, clientUpdateData);
+      const response = await dispatch(
+        updateClient({ clientId: id, data: clientUpdateData })
+      );
 
-      if (response.success) {
+      if (response.payload?.success) {
         setShowSuccessModal(true);
       } else {
-        setErrorMessage(response.message || "Failed to update client");
+        setErrorMessage(response.payload?.message || "Failed to update client");
         setShowErrorModal(true);
       }
     } catch (error) {
@@ -173,7 +170,7 @@ export const useClientEditHook = (): UseClientEditReturn => {
   return {
     // State
     isSubmitting,
-    isLoading,
+    isLoading: isFetching,
     showSuccessModal,
     showErrorModal,
     errorMessage,

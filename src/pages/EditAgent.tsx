@@ -90,7 +90,6 @@ export default function EditAgent() {
     dateOfEmployment: agent.dateOfEmployment
       ? dayjs(agent.dateOfEmployment)
       : dayjs(),
-    salaryAmount: agent.salaryAmount || "",
     validNIN: agent.validNIN || "",
     utilityBill: agent.utilityBill || "",
     passport: agent.passport || "",
@@ -114,13 +113,7 @@ export default function EditAgent() {
       "stateOfResidence",
       "lgaOfResidence",
     ],
-    [
-      "bankName",
-      "bankAccount",
-      "employmentType",
-      "dateOfEmployment",
-      "salaryAmount",
-    ],
+    ["bankName", "bankAccount", "employmentType", "dateOfEmployment"],
     ["validNIN", "utilityBill", "passport", "employmentLetter"],
   ];
 
@@ -192,7 +185,7 @@ export default function EditAgent() {
               validationSchema={validationSchemas[activeStep]}
               onSubmit={(values, formikHelpers) => {
                 if (shouldSubmit && activeStep === steps.length - 1) {
-                  handleFinish(values, formikHelpers);
+                  handleFinish(values);
                 } else {
                   formikHelpers.setSubmitting(false);
                 }
@@ -354,13 +347,6 @@ export default function EditAgent() {
                           className="text-red-500 text-xs"
                         />
                       </div>
-
-                      {/* <TextInput
-                        name="salaryAmount"
-                        label="Salary Amount"
-                        amount={true}
-                        type="tel"
-                      /> */}
                     </div>
                   )}
 

@@ -5,8 +5,11 @@ import { managerEditValidationSchemas } from "../helpers/validationSchemas";
 
 import type { AppDispatch, RootState } from "@/store";
 import type { Manager } from "@/services/features/manager/manager.types";
-import { getManagerDetails } from "@/services/features/director/directorService";
-import { resetDirector, updateManager } from "@/services/features";
+import {
+  getManagerDetails,
+  resetDirector,
+  updateManager,
+} from "@/services/features/director/directorSlice";
 
 // Manager edit form values type
 export interface ManagerEditFormValues {
@@ -54,61 +57,31 @@ export const useManagerEditHook = (): UseManagerEditReturn => {
   const { id } = useParams<{ id: string }>();
   const dispatch = useDispatch<AppDispatch>();
 
+  // Get manager data from Redux store
+  const { currentDirector, isFetching, isLoading, isError, message } =
+    useSelector((state: RootState) => state.director);
+
   // Local state for manager editing
-  const [manager, setManager] = useState<Manager | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Redux manager update state
-  const {
-    isLoading: isUpdating,
-    isSuccess,
-    isError,
-    message,
-  } = useSelector((state: RootState) => state.director);
+  const manager = currentDirector as Manager | null;
 
-  // Reset state on mount
+  // Fetch manager details using Redux
   useEffect(() => {
-    dispatch(resetDirector());
-  }, [dispatch]);
-
-  // Handle success
-  useEffect(() => {
-    if (isSuccess && message === "manager updated successfully") {
-      setShowSuccessModal(true);
+    if (id) {
+      dispatch(getManagerDetails(id));
     }
-  }, [isSuccess, message]);
+  }, [id, dispatch]);
 
-  // Handle error
+  // Handle error state
   useEffect(() => {
     if (isError && message) {
       setErrorMessage(message);
       setShowErrorModal(true);
     }
   }, [isError, message]);
-
-  // Fetch manager details
-  useEffect(() => {
-    const fetchManagerDetails = async () => {
-      if (!id) return;
-      try {
-        setIsLoading(true);
-        const response = await getManagerDetails(id);
-        console.log(response);
-        console.log(id);
-        if (response.success) {
-          setManager(response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching manager details:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchManagerDetails();
-  }, [id]);
 
   // Handle manager update
   const handleFinish = async (values: ManagerEditFormValues): Promise<void> => {
@@ -154,8 +127,8 @@ export const useManagerEditHook = (): UseManagerEditReturn => {
   return {
     // State
     manager,
-    isLoading,
-    isUpdating,
+    isLoading: isFetching,
+    isUpdating: isLoading,
     showSuccessModal,
     showErrorModal,
     errorMessage,

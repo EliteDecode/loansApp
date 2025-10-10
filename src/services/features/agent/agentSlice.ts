@@ -12,6 +12,7 @@ const initialState: AgentState = {
     ? JSON.parse(currentAgentFromStorage)
     : null,
   isLoading: false,
+  isFetching: false,
   isSuccess: false,
   isError: false,
   message: "",
@@ -120,6 +121,7 @@ const agentSlice = createSlice({
   reducers: {
     resetAgent: (state) => {
       state.isLoading = false;
+      state.isFetching = false;
       state.isSuccess = false;
       state.isError = false;
       state.message = "";
@@ -128,6 +130,7 @@ const agentSlice = createSlice({
       state.creditAgents = [];
       state.currentAgent = null;
       state.isLoading = false;
+      state.isFetching = false;
       state.isSuccess = false;
       state.isError = false;
       state.message = "";
@@ -221,6 +224,21 @@ const agentSlice = createSlice({
         state.isError = true;
         state.message = action.payload as string;
         state.isSuccess = false;
+      })
+      // Get Credit Agent Details
+      .addCase(getCreditAgentDetails.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
+      .addCase(getCreditAgentDetails.fulfilled, (state, action) => {
+        state.isFetching = false;
+        state.currentAgent = action.payload?.data || null;
+      })
+      .addCase(getCreditAgentDetails.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
       })
       // Create Credit Agent
       .addCase(createCreditAgent.pending, (state) => {

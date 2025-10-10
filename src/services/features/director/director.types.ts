@@ -26,6 +26,17 @@ export interface Director {
   canCreateCreditAgents: boolean;
   canApproveLoans: boolean;
   status: "active" | "inactive" | "suspended";
+  directorID: string;
+  clients?: any[];
+  loanRequests?: any[];
+  financeRecord?: {
+    currentSalary?: number;
+    totalUnpaidAmount?: number;
+    unpaidMonths?: string[];
+    paymentRecords?: any[];
+    updatedAt?: string;
+  };
+  statistics?: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -169,6 +180,7 @@ export interface DirectorState {
   currentDirector: Director | null;
   settings: SystemSettings | null;
   isLoading: boolean;
+  isFetching: boolean;
   isSuccess: boolean;
   isError: boolean;
   message: string;

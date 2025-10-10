@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { toggleClientStatus } from "@/services/features/client/clientService";
+import { useDispatch } from "react-redux";
+import { toggleClientStatus } from "@/services/features/client/clientSlice";
+import type { AppDispatch } from "@/store";
 
 // Client suspend hook return type
 export interface UseClientSuspendReturn {
@@ -22,6 +24,8 @@ export interface UseClientSuspendReturn {
 }
 
 export const useClientSuspendHook = (): UseClientSuspendReturn => {
+  const dispatch = useDispatch<AppDispatch>();
+
   // Local state for client suspension
   const [isSuspending, setIsSuspending] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -46,14 +50,19 @@ export const useClientSuspendHook = (): UseClientSuspendReturn => {
       // Determine new status based on current status
       const newStatus = currentStatus === "active" ? "suspended" : "active";
 
-      const response = await toggleClientStatus(clientId, {
-        status: newStatus,
-      });
+      const response = await dispatch(
+        toggleClientStatus({
+          clientId,
+          status: newStatus,
+        })
+      );
 
-      if (response.success) {
+      if (response.payload?.success) {
         setShowSuccessModal(true);
       } else {
-        setErrorMessage(response.message || "Failed to update client status");
+        setErrorMessage(
+          response.payload?.message || "Failed to update client status"
+        );
         setShowErrorModal(true);
       }
     } catch (error) {

@@ -136,6 +136,7 @@ export interface ClientState {
   myClients: Client[];
   currentClient: Client | null;
   isLoading: boolean;
+  isFetching: boolean;
   isSuccess: boolean;
   isError: boolean;
   message: string;

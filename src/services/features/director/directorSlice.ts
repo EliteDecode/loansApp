@@ -14,6 +14,7 @@ const initialState: DirectorState = {
   managers: [], //change later
   settings: null,
   isLoading: false,
+  isFetching: false,
   isSuccess: false,
   isError: false,
   message: "",
@@ -409,6 +410,22 @@ const directorSlice = createSlice({
         state.message =
           action.payload?.message ||
           "Failed to retrieve managers. Please try again.";
+      })
+
+      // Get Manager Details
+      .addCase(getManagerDetails.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
+      .addCase(getManagerDetails.fulfilled, (state, action) => {
+        state.isFetching = false;
+        state.currentDirector = action.payload?.data || null;
+      })
+      .addCase(getManagerDetails.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
       })
 
       // Update Credit Agent

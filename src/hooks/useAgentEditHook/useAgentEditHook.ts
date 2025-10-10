@@ -6,7 +6,7 @@ import {
   updateCreditAgent,
   resetAgent,
 } from "@/services/features/agent/agentSlice";
-import { getCreditAgentDetails } from "@/services/features/agent/agentService";
+import { getCreditAgentDetails } from "@/services/features/agent/agentSlice";
 import type { AppDispatch, RootState } from "@/store";
 import type { CreditAgent } from "@/services/features/agent/agent.types";
 
@@ -55,32 +55,24 @@ export const useAgentEditHook = (): UseAgentEditReturn => {
   const { id } = useParams<{ id: string }>();
   const dispatch = useDispatch<AppDispatch>();
 
+  // Get agent data from Redux store
+  const { currentAgent, isFetching, isLoading, isError, message } = useSelector(
+    (state: RootState) => state.agent
+  );
+
   // Local state for agent editing
-  const [agent, setAgent] = useState<CreditAgent | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Get Redux state for agent update
-  const {
-    isLoading: isUpdating,
-    isSuccess,
-    isError,
-    message,
-  } = useSelector((state: RootState) => state.agent);
+  const agent = currentAgent as CreditAgent | null;
 
-  // Clear agent state when component mounts
+  // Fetch agent details using Redux
   useEffect(() => {
-    dispatch(resetAgent());
-  }, [dispatch]);
-
-  // Handle success state
-  useEffect(() => {
-    if (isSuccess && message === "agent updated successfully") {
-      setShowSuccessModal(true);
+    if (id) {
+      dispatch(getCreditAgentDetails(id));
     }
-  }, [isSuccess, message]);
+  }, [id, dispatch]);
 
   // Handle error state
   useEffect(() => {
@@ -89,25 +81,6 @@ export const useAgentEditHook = (): UseAgentEditReturn => {
       setShowErrorModal(true);
     }
   }, [isError, message]);
-
-  // Fetch agent details
-  useEffect(() => {
-    const fetchAgentDetails = async () => {
-      if (!id) return;
-      try {
-        setIsLoading(true);
-        const response = await getCreditAgentDetails(id);
-        if (response.success) {
-          setAgent(response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching agent details:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchAgentDetails();
-  }, [id]);
 
   // Handle agent update
   const handleFinish = async (values: AgentEditFormValues): Promise<void> => {
@@ -153,8 +126,8 @@ export const useAgentEditHook = (): UseAgentEditReturn => {
   return {
     // State
     agent,
-    isLoading,
-    isUpdating,
+    isLoading: isFetching,
+    isUpdating: isLoading,
     showSuccessModal,
     showErrorModal,
     errorMessage,

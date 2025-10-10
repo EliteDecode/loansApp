@@ -1,59 +1,50 @@
 import PageHeader from "@/components/PageHeader/PageHeader";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getMyClients } from "@/services/features/client/clientService";
-import { getAllLoanProducts } from "@/services/features/loanProduct/loanProductService";
-import type { Client } from "@/services/features/client/client.types";
-import type { LoanProduct } from "@/services/features/loanProduct/loanProduct.types";
+import { useDispatch, useSelector } from "react-redux";
+import { getMyClients } from "@/services/features/client/clientSlice";
+import { getAllLoanProducts } from "@/services/features/loanProduct/loanProductSlice";
+import type { RootState, AppDispatch } from "@/store";
 import CreateNewLoan from "@/components/ui/CreateNewLoan";
 
 export default function LoanRequests() {
   const [searchParams] = useSearchParams();
-
-  // State for data
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loanProducts, setLoanProducts] = useState<LoanProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
 
   // Get clientId from URL params (if coming from client details page)
   const clientId = searchParams.get("clientId");
 
-  // Fetch clients and loan products
+  // Get data from Redux store
+  const {
+    myClients,
+    isFetching: clientsLoading,
+    isError: clientsError,
+    message: clientsMessage,
+  } = useSelector((state: RootState) => state.client);
+  const {
+    loanProducts,
+    isFetching: productsLoading,
+    isError: productsError,
+    message: productsMessage,
+  } = useSelector((state: RootState) => state.loanProduct);
+
+  const isLoading = clientsLoading || productsLoading;
+  const error = clientsError
+    ? clientsMessage
+    : productsError
+    ? productsMessage
+    : null;
+
+  // Fetch clients and loan products using Redux
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    dispatch(getMyClients());
+    dispatch(getAllLoanProducts());
+  }, [dispatch]);
 
-        // Fetch clients and loan products in parallel
-        const [clientsResponse, loanProductsResponse] = await Promise.all([
-          getMyClients(),
-          getAllLoanProducts(),
-        ]);
-
-        if (clientsResponse.success) {
-          setClients(clientsResponse.data);
-        } else {
-          setError(clientsResponse.message || "Failed to fetch clients");
-        }
-
-        if (loanProductsResponse.success) {
-          setLoanProducts(loanProductsResponse.data);
-        } else {
-          setError(
-            loanProductsResponse.message || "Failed to fetch loan products"
-          );
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // Filter loan products to show only active ones
+  const activeLoanProducts = loanProducts.filter(
+    (product) => product.status === "active"
+  );
 
   // Loading state
   if (isLoading) {
@@ -100,8 +91,8 @@ export default function LoanRequests() {
 
       <div className="p-4 md:p-6 bg-white rounded-[12px]">
         <CreateNewLoan
-          clients={clients}
-          loanProducts={loanProducts}
+          clients={myClients}
+          loanProducts={activeLoanProducts}
           preselectedClientId={clientId}
         />
       </div>

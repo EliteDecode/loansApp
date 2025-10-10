@@ -1,7 +1,6 @@
 import Button from "@/components/Button/Button";
 import PageHeader from "@/components/PageHeader/PageHeader";
 import add from "@/assets/icons/add.svg";
-import { EllipsisVertical } from "lucide-react";
 import { useState, useEffect } from "react";
 import CustomTable from "@/components/CustomTable/CustomTable";
 import { useNavigate } from "react-router-dom";
@@ -9,16 +8,14 @@ import type { CustomTableColumn } from "@/components/CustomTable/CustomTable.typ
 import {
   getAllClients,
   getMyClients,
-} from "@/services/features/client/clientService";
+} from "@/services/features/client/clientSlice";
 import type { Client } from "@/services/features/client/client.types";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState, AppDispatch } from "@/store";
 
 export default function Clients() {
   const navigate = useNavigate();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
   const [activeTab, setActiveTab] = useState<"my-clients" | "all-clients">(
     "my-clients"
   );
@@ -26,45 +23,28 @@ export default function Clients() {
   // Get user role from Redux
   const { role } = useSelector((state: RootState) => state.auth);
 
+  // Get client data from Redux store
+  const { clients, myClients, isFetching, isError, message } = useSelector(
+    (state: RootState) => state.client
+  );
+
+  const currentClients = activeTab === "my-clients" ? myClients : clients;
+  const error = isError ? message : null;
+
   // Fetch clients based on active tab and user role
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        let response;
-
-        // Credit agents can only see their own clients
-        if (role === "creditAgent") {
-          response = await getMyClients();
-        } else {
-          // Directors and managers can switch between tabs
-          if (activeTab === "my-clients") {
-            response = await getMyClients();
-          } else {
-            response = await getAllClients();
-          }
-        }
-
-        if (response.success) {
-          // Handle both response formats: direct array or wrapped in clients property
-          const clientsData = Array.isArray(response.data)
-            ? response.data
-            : response.data.clients;
-          setClients(clientsData);
-        } else {
-          setError(response.message || "Failed to fetch clients");
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
+    // Credit agents can only see their own clients
+    if (role === "creditAgent") {
+      dispatch(getMyClients());
+    } else {
+      // Directors and managers can switch between tabs
+      if (activeTab === "my-clients") {
+        dispatch(getMyClients());
+      } else {
+        dispatch(getAllClients());
       }
-    };
-
-    fetchClients();
-  }, [activeTab, role]);
+    }
+  }, [activeTab, role, dispatch]);
 
   const columns: CustomTableColumn<Client>[] = [
     {
@@ -153,23 +133,21 @@ export default function Clients() {
       header: "Actions",
       accessor: "_id",
       fixed: "right",
-      width: "80px",
+      width: "120px",
       render: (_: any, row: Client) => (
-        <div
-          className="cursor-pointer p-2 hover:bg-gray-100 rounded-md transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/clients/${row._id}`);
-          }}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(`/clients/${row._id}`)}
         >
-          <EllipsisVertical className="w-5 h-5 text-gray-600" />
-        </div>
+          View Details
+        </Button>
       ),
     },
   ];
 
   // Show loading state
-  if (isLoading) {
+  if (isFetching) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -243,7 +221,8 @@ export default function Clients() {
       {/* Client Count Display */}
       <div className="mb-4">
         <p className="text-sm text-gray-600">
-          Showing {clients.length} client{clients.length !== 1 ? "s" : ""}
+          Showing {currentClients.length} client
+          {currentClients.length !== 1 ? "s" : ""}
           {role !== "creditAgent" && (
             <span className="ml-2">
               ({activeTab === "my-clients" ? "My Clients" : "All Clients"})
@@ -253,7 +232,7 @@ export default function Clients() {
       </div>
 
       <CustomTable
-        data={clients}
+        data={currentClients}
         columns={columns}
         searchable={true}
         searchPlaceholder="Search by name, phone number, or client ID"
@@ -269,7 +248,7 @@ export default function Clients() {
         showPageSizeSelector={true}
         pageSizeOptions={[5, 10, 20, 50]}
         emptyMessage="No clients found"
-        loading={isLoading}
+        loading={isFetching}
         onRowClick={(row) => navigate(`/clients/${row._id}`)}
       />
     </div>

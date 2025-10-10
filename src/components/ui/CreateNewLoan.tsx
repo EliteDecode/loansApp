@@ -13,9 +13,11 @@ import { DatePicker } from "@mui/x-date-pickers";
 import FileUploadWithProgress from "../FileUploadWithProgress/FileUploadWithProgress";
 import type { Client } from "@/services/features/client/client.types";
 import type { LoanProduct } from "@/services/features/loanProduct/loanProduct.types";
-import { createLoanRequest } from "@/services/features/loanRequest/loanRequestService";
+import { createLoanRequest } from "@/services/features/loanRequest/loanRequestSlice";
 import SuccessModal from "../modals/SuccessModal/SuccessModal";
 import ErrorModal from "../modals/ErrorModal/ErrorModal";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "@/store";
 
 // Component props interface
 interface CreateNewLoanProps {
@@ -45,6 +47,7 @@ export default function CreateNewLoan({
   preselectedClientId,
 }: CreateNewLoanProps) {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const [accountName, setAccountName] = useState<string>("");
   const [loadingAccount, setLoadingAccount] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,127 +86,142 @@ export default function CreateNewLoan({
     loanPurpose: Yup.string()
       .min(10, "Loan purpose must be at least 10 characters")
       .required("Please provide loan purpose"),
-    collateralDescription: Yup.string().when("loanProductId", {
-      is: (val: string) => {
-        const product = loanProducts.find((p) => p._id === val);
-        return product?.requiresCollateral === true;
-      },
-      then: (schema) =>
-        schema
-          .min(10, "Collateral description must be at least 10 characters")
-          .required("Collateral description cannot be empty"),
-      otherwise: (schema) => schema.notRequired(),
-    }),
+    collateralDescription: Yup.string().optional(),
     supportingDocuments: Yup.array().optional(),
   });
 
   const bankOptions = [
-    { label: "Test Bank", value: "001", name: "Test Bank", code: "001" }, // ✅ safe for test mode
-    { label: "Access Bank", value: "044", name: "Access Bank", code: "044" }, /// change value and code to 044 later, this is just for test
-    { label: "Citibank", value: "023", name: "Citibank", code: "023" },
-    { label: "Diamond Bank", value: "063", name: "Diamond Bank", code: "063" },
+    { label: "Test Bank", value: "Test Bank", name: "Test Bank", code: "001" }, // ✅ safe for test mode
+    {
+      label: "Access Bank",
+      value: "Access Bank",
+      name: "Access Bank",
+      code: "044",
+    }, /// change value and code to 044 later, this is just for test
+    { label: "Citibank", value: "Citibank", name: "Citibank", code: "023" },
+    {
+      label: "Diamond Bank",
+      value: "Diamond Bank",
+      name: "Diamond Bank",
+      code: "063",
+    },
     {
       label: "Ecobank Nigeria",
-      value: "050",
+      value: "Ecobank Nigeria",
       name: "Ecobank Nigeria",
       code: "050",
     },
     {
       label: "Fidelity Bank Nigeria",
-      value: "070",
+      value: "Fidelity Bank Nigeria",
       name: "Fidelity Bank Nigeria",
       code: "070",
     },
     {
       label: "First Bank of Nigeria",
-      value: "011",
+      value: "First Bank of Nigeria",
       name: "First Bank of Nigeria",
       code: "011",
     },
     {
       label: "First City Monument Bank",
-      value: "214",
+      value: "First City Monument Bank",
       name: "First City Monument Bank",
       code: "214",
     },
     {
       label: "Guaranty Trust Bank",
-      value: "058",
+      value: "Guaranty Trust Bank",
       name: "Guaranty Trust Bank",
       code: "058",
     },
     {
       label: "Heritage Bank Plc",
-      value: "030",
+      value: "Heritage Bank Plc",
       name: "Heritage Bank Plc",
       code: "030",
     },
     {
       label: "Keystone Bank Limited",
-      value: "082",
+      value: "Keystone Bank Limited",
       name: "Keystone Bank Limited",
       code: "082",
     },
-    { label: "Kuda Bank", value: "50211", name: "Kuda Bank", code: "50211" },
+    {
+      label: "Kuda Bank",
+      value: "Kuda Bank",
+      name: "Kuda Bank",
+      code: "50211",
+    },
     {
       label: "Moniepoint MFB",
-      value: "50515",
+      value: "Moniepoint MFB",
       name: "Moniepoint MFB",
       code: "50515",
     },
-    { label: "Opay", value: "999991", name: "Opay", code: "999991" },
-    { label: "Palmpay", value: "999992", name: "Palmpay", code: "999992" },
-    { label: "Polaris Bank", value: "076", name: "Polaris Bank", code: "076" },
+    { label: "Opay", value: "Opay", name: "Opay", code: "999991" },
+    { label: "Palmpay", value: "Palmpay", name: "Palmpay", code: "999992" },
+    {
+      label: "Polaris Bank",
+      value: "Polaris Bank",
+      name: "Polaris Bank",
+      code: "076",
+    },
     {
       label: "Providus Bank",
-      value: "101",
+      value: "Providus Bank",
       name: "Providus Bank",
       code: "101",
     },
     {
       label: "Stanbic IBTC Bank",
-      value: "221",
+      value: "Stanbic IBTC Bank",
       name: "Stanbic IBTC Bank",
       code: "221",
     },
     {
       label: "Standard Chartered Bank",
-      value: "068",
+      value: "Standard Chartered Bank",
       name: "Standard Chartered Bank",
       code: "068",
     },
     {
       label: "Sterling Bank",
-      value: "232",
+      value: "Sterling Bank",
       name: "Sterling Bank",
       code: "232",
     },
     {
       label: "Suntrust Bank Nigeria",
-      value: "100",
+      value: "Suntrust Bank Nigeria",
       name: "Suntrust Bank Nigeria",
       code: "100",
     },
     {
       label: "Union Bank of Nigeria",
-      value: "032",
+      value: "Union Bank of Nigeria",
       name: "Union Bank of Nigeria",
       code: "032",
     },
     {
       label: "United Bank for Africa",
-      value: "033",
+      value: "United Bank for Africa",
       name: "United Bank for Africa",
       code: "033",
     },
     {
       label: "Unity Bank Plc",
-      value: "215",
+      value: "Unity Bank Plc",
       name: "Unity Bank Plc",
       code: "215",
     },
-    { label: "Wema Bank", value: "035", name: "Wema Bank", code: "035" },
-    { label: "Zenith Bank", value: "057", name: "Zenith Bank", code: "057" },
+    { label: "Wema Bank", value: "Wema Bank", name: "Wema Bank", code: "035" },
+    {
+      label: "Zenith Bank",
+      value: "Zenith Bank",
+      name: "Zenith Bank",
+      code: "057",
+    },
   ];
 
   // Handle form submission
@@ -224,12 +242,14 @@ export default function CreateNewLoan({
         supportingDocuments: values.supportingDocuments,
       };
 
-      const response = await createLoanRequest(loanData);
+      const response = await dispatch(createLoanRequest(loanData));
 
-      if (response.success) {
+      if (response.payload?.success) {
         setShowSuccessModal(true);
       } else {
-        setErrorMessage(response.message || "Failed to create loan request");
+        setErrorMessage(
+          response.payload?.message || "Failed to create loan request"
+        );
         setShowErrorModal(true);
       }
     } catch (error) {
@@ -296,7 +316,7 @@ export default function CreateNewLoan({
           useEffect(() => {
             const fetchAccountName = async () => {
               const { clientAccountNumber, clientBankName } = formik.values;
-              const bank = bankOptions.find((b) => b.value === clientBankName);
+              const bank = bankOptions.find((b) => b.name === clientBankName);
 
               if (clientAccountNumber?.length === 10 && bank) {
                 try {

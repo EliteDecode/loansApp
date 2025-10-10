@@ -10,10 +10,10 @@ import CustomTable from "@/components/CustomTable/CustomTable";
 import type { CustomTableColumn } from "@/components/CustomTable/CustomTable.types";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getClientDetails } from "@/services/features/client/clientService";
+import { getClientDetails } from "@/services/features/client/clientSlice";
 import type { Client } from "@/services/features/client/client.types";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState, AppDispatch } from "@/store";
 import SuccessModal from "@/components/modals/SuccessModal/SuccessModal";
 import ErrorModal from "@/components/modals/ErrorModal/ErrorModal";
 import ConfirmationModal from "@/components/modals/ConfirmationModal/ConfirmationModal";
@@ -88,16 +88,20 @@ interface ProfileData {
 
 export default function ClientDetails() {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
-  const [client, setClient] = useState<ClientWithLoans | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [currentUserProfile, setCurrentUserProfile] =
     useState<ProfileData | null>(null);
 
-  // Get user role from Redux
+  // Get data from Redux store
   const { role } = useSelector((state: RootState) => state.auth);
+  const { currentClient, isFetching, isError, message } = useSelector(
+    (state: RootState) => state.client
+  );
+
+  const client = currentClient as ClientWithLoans | null;
+  const error = isError ? message : null;
 
   // Use the client suspend hook
   const {
@@ -122,31 +126,12 @@ export default function ClientDetails() {
     }
   }, [profileData]);
 
-  // Fetch client details
+  // Fetch client details using Redux
   useEffect(() => {
-    const fetchClientDetails = async () => {
-      if (!id) return;
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await getClientDetails(id);
-
-        if (response.success) {
-          setClient(response.data);
-        } else {
-          setError(response.message || "Failed to fetch client details");
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchClientDetails();
-  }, [id]);
+    if (id) {
+      dispatch(getClientDetails(id));
+    }
+  }, [id, dispatch]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -169,7 +154,7 @@ export default function ClientDetails() {
   // Check if current user is the creator of the client
   const isCurrentUserCreator = () => {
     if (!client || !currentUserProfile) return false;
-    return client.creator.email === currentUserProfile.email;
+    return client?.creator.email === currentUserProfile.email;
   };
 
   // Loan table columns
@@ -259,10 +244,25 @@ export default function ClientDetails() {
         <span className="text-sm text-gray-600">{formatDate(value)}</span>
       ),
     },
+    {
+      header: "Actions",
+      accessor: "_id",
+      fixed: "right",
+      width: "120px",
+      render: (_: any, row: Loan) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(`/loans/${row._id}`)}
+        >
+          View Loan
+        </Button>
+      ),
+    },
   ];
 
   // Loading state
-  if (isLoading) {
+  if (isFetching) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -307,7 +307,7 @@ export default function ClientDetails() {
           <div className="space-y-2 md:text-[20px] text-[16px] leading-[120%] tracking-[-2%] text-gray-400 font-medium">
             <div className="flex items-center gap-12 justify-between lg:justify-start">
               <h1 className="md:text-[28px] text-[20px] font-semibold text-gray-700">
-                {client.firstName} {client.lastName}
+                {client?.firstName} {client?.lastName}
               </h1>
               <div
                 className={`px-3 py-1 text-[12px] leading-[145%] w-fit rounded-[12px] ${
@@ -316,28 +316,27 @@ export default function ClientDetails() {
                     inactive: "bg-[#F3A2181A] text-[#F3A218]",
                     suspended: "bg-[#CB1A141A] text-[#CB1A14]",
                     terminated: "bg-[#6B72801A] text-[#6B7280]",
-                  }[client.status] || "bg-gray-100 text-gray-600"
+                  }[client?.status] || "bg-gray-100 text-gray-600"
                 }`}
               >
-                {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+                {client?.status.charAt(0).toUpperCase() +
+                  client?.status.slice(1)}
               </div>
             </div>
 
-            <p>Client ID: {client.clientID}</p>
-            <p>Joined: {formatDate(client.createdAt)}</p>
-            <p>Email: {client.email}</p>
-            <p>Phone: {client.phoneNumber}</p>
+            <p>Client ID: {client?.clientID}</p>
+            <p>Joined: {formatDate(client?.createdAt)}</p>
+            <p>Email: {client?.email}</p>
+            <p>Phone: {client?.phoneNumber}</p>
           </div>
 
           <div className="flex lg:flex-row flex-col items-center md:gap-4 gap-2 flex-wrap ">
             {isCurrentUserCreator() && (
-              <Button
-                height="h-[55px]"
-                width="lg:w-[205px] w-full"
-                onClick={() => navigate(`/clients/${id}/edit`)}
-              >
-                Edit Client Info
-              </Button>
+              <a href={`/clients/${id}/edit`}>
+                <Button height="h-[55px]" width="lg:w-[205px] w-full">
+                  Edit Client Info
+                </Button>
+              </a>
             )}
 
             {role === "creditAgent" ? (
@@ -364,7 +363,7 @@ export default function ClientDetails() {
               </Button>
             )}
 
-            {client.loans.all.length > 0 && (
+            {client?.loans?.all?.length > 0 && (
               <Button
                 height="h-[55px]"
                 width="lg:w-[205px] w-full"
@@ -434,156 +433,175 @@ export default function ClientDetails() {
                   </p>
                 </div>
 
-                <div className="space-y-4 p-4">
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      Full Name
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      {client.firstName} {client.lastName}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      Date of Birth
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      {formatDate(client.dateOfBirth)} (Age:{" "}
-                      {new Date().getFullYear() -
-                        new Date(client.dateOfBirth).getFullYear()}
-                      )
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      Phone Number
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      {client.phoneNumber}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      Email Address
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      {client.email}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">Gender</label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700 capitalize">
-                      {client.gender}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      Residential Address
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      {client.residentialAddress}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      State of Residence
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      {client.stateOfResidence}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      LGA of Residence
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      {client.lgaOfResidence}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      Employment Type
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700 capitalize">
-                      {client.employmentType}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      Occupation / Business Type
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      {client.occupationOrBusinessType}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      Monthly Income
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      {formatCurrency(client.monthlyIncome)}
-                    </div>
-                  </div>
-
-                  {client.employer && (
-                    <div className="flex flex-col gap-1 w-full">
-                      <label className="font-medium text-gray-900">
-                        Employer
-                      </label>
-                      <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                        {client.employer}
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Personal Information */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                        Personal Information
+                      </h4>
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Full Name
+                          </span>
+                          <p className="text-sm font-medium text-gray-900">
+                            {client?.firstName} {client?.lastName}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Date of Birth
+                          </span>
+                          <p className="text-sm text-gray-700">
+                            {formatDate(client?.dateOfBirth)} (Age:{" "}
+                            {new Date().getFullYear() -
+                              new Date(client?.dateOfBirth).getFullYear()}
+                            )
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Gender
+                          </span>
+                          <p className="text-sm text-gray-700 capitalize">
+                            {client?.gender}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Phone Number
+                          </span>
+                          <p className="text-sm text-gray-700 font-mono">
+                            {client?.phoneNumber}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Email Address
+                          </span>
+                          <p className="text-sm text-gray-700">
+                            {client?.email}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  )}
 
-                  {client.workAddress && (
-                    <div className="flex flex-col gap-1 w-full">
-                      <label className="font-medium text-gray-900">
-                        Work Address
-                      </label>
-                      <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                        {client.workAddress}
+                    {/* Address Information */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                        Address Information
+                      </h4>
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Residential Address
+                          </span>
+                          <p className="text-sm text-gray-700">
+                            {client?.residentialAddress}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            State of Residence
+                          </span>
+                          <p className="text-sm text-gray-700">
+                            {client?.stateOfResidence}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            LGA of Residence
+                          </span>
+                          <p className="text-sm text-gray-700">
+                            {client?.lgaOfResidence}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  )}
 
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
-                      Years in Business
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      {client.yearsInBusiness} years
+                    {/* Employment Information */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                        Employment Information
+                      </h4>
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Employment Type
+                          </span>
+                          <p className="text-sm text-gray-700 capitalize">
+                            {client?.employmentType?.replace("-", " ")}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Occupation/Business
+                          </span>
+                          <p className="text-sm text-gray-700">
+                            {client?.occupationOrBusinessType}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Monthly Income
+                          </span>
+                          <p className="text-sm font-medium text-gray-900">
+                            {formatCurrency(client?.monthlyIncome)}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Years in Business
+                          </span>
+                          <p className="text-sm text-gray-700">
+                            {client?.yearsInBusiness} years
+                          </p>
+                        </div>
+                        {client?.employer && (
+                          <div>
+                            <span className="text-xs text-gray-500 uppercase tracking-wide">
+                              Employer
+                            </span>
+                            <p className="text-sm text-gray-700">
+                              {client?.employer}
+                            </p>
+                          </div>
+                        )}
+                        {client?.workAddress && (
+                          <div>
+                            <span className="text-xs text-gray-500 uppercase tracking-wide">
+                              Work Address
+                            </span>
+                            <p className="text-sm text-gray-700">
+                              {client?.workAddress}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1 w-full">
-                    <label className="font-medium text-gray-900">
+                  {/* Created By Information */}
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <h4 className="font-semibold text-gray-800 text-sm uppercase tracking-wide mb-3">
                       Created By
-                    </label>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                      <div className="space-y-1">
-                        <div className="font-medium">
-                          {client.creator.firstName} {client.creator.lastName}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {client.creator.email}
-                        </div>
-                        <div className="text-sm text-gray-600 capitalize">
-                          {client.creator.role} •{" "}
-                          {client.creator.creditAgentID ||
-                            client.creator.managerID ||
-                            client.creator.directorID}
-                        </div>
+                    </h4>
+                    <div className="flex items-center space-x-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {client?.creator?.firstName}{" "}
+                          {client?.creator?.lastName}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {client?.creator?.email}
+                        </p>
+                      </div>
+                      <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                        {client?.creator?.role} •{" "}
+                        {client?.creator?.creditAgentID ||
+                          client?.creator?.managerID ||
+                          client?.creator?.directorID}
                       </div>
                     </div>
                   </div>
@@ -601,90 +619,86 @@ export default function ClientDetails() {
                   </p>
                 </div>
 
-                <div className="space-y-6 p-4">
-                  {/* Primary Guarantor */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                      Primary Guarantor
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1 w-full">
-                        <label className="font-medium text-gray-900">
-                          Full Name
-                        </label>
-                        <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                          {client.guarantorFullName}
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Primary Guarantor */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                        Primary Guarantor
+                      </h4>
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Full Name
+                          </span>
+                          <p className="text-sm font-medium text-gray-900">
+                            {client?.guarantorFullName}
+                          </p>
                         </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1 w-full">
-                        <label className="font-medium text-gray-900">
-                          Relationship
-                        </label>
-                        <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700 capitalize">
-                          {client.guarantorRelationship}
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Relationship
+                          </span>
+                          <p className="text-sm text-gray-700 capitalize">
+                            {client?.guarantorRelationship}
+                          </p>
                         </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1 w-full">
-                        <label className="font-medium text-gray-900">
-                          Phone Number
-                        </label>
-                        <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                          {client.guarantorPhoneNumber}
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Phone Number
+                          </span>
+                          <p className="text-sm text-gray-700 font-mono">
+                            {client?.guarantorPhoneNumber}
+                          </p>
                         </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1 w-full">
-                        <label className="font-medium text-gray-900">
-                          Address
-                        </label>
-                        <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                          {client.guarantorAddress}
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Address
+                          </span>
+                          <p className="text-sm text-gray-700">
+                            {client?.guarantorAddress}
+                          </p>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Secondary Guarantor */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                      Secondary Guarantor
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1 w-full">
-                        <label className="font-medium text-gray-900">
-                          Full Name
-                        </label>
-                        <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                          {client.secondaryGuarantorFullName}
+                    {/* Secondary Guarantor */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                        Secondary Guarantor
+                      </h4>
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Full Name
+                          </span>
+                          <p className="text-sm font-medium text-gray-900">
+                            {client?.secondaryGuarantorFullName}
+                          </p>
                         </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1 w-full">
-                        <label className="font-medium text-gray-900">
-                          Relationship
-                        </label>
-                        <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700 capitalize">
-                          {client.secondaryGuarantorRelationship}
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Relationship
+                          </span>
+                          <p className="text-sm text-gray-700 capitalize">
+                            {client?.secondaryGuarantorRelationship}
+                          </p>
                         </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1 w-full">
-                        <label className="font-medium text-gray-900">
-                          Phone Number
-                        </label>
-                        <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                          {client.secondaryGuarantorPhoneNumber}
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Phone Number
+                          </span>
+                          <p className="text-sm text-gray-700 font-mono">
+                            {client?.secondaryGuarantorPhoneNumber}
+                          </p>
                         </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1 w-full">
-                        <label className="font-medium text-gray-900">
-                          Address
-                        </label>
-                        <div className="p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-                          {client.secondaryGuarantorAddress}
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Address
+                          </span>
+                          <p className="text-sm text-gray-700">
+                            {client?.secondaryGuarantorAddress}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -704,12 +718,12 @@ export default function ClientDetails() {
                 </div>
 
                 <div className="space-y-4 p-4">
-                  {client.validNIN && (
+                  {client?.validNIN && (
                     <div className="flex items-center justify-between h-16 border border-[#C9CDD3] rounded-[16px] px-3">
                       <div className="flex items-center gap-2">
                         <img src={pdf} />
                         <a
-                          href={client.validNIN}
+                          href={client?.validNIN}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[16px] leading-[145%] text-primary hover:text-primary-dark underline"
@@ -721,12 +735,12 @@ export default function ClientDetails() {
                     </div>
                   )}
 
-                  {client.utilityBill && (
+                  {client?.utilityBill && (
                     <div className="flex items-center justify-between h-16 border border-[#C9CDD3] rounded-[16px] px-3">
                       <div className="flex items-center gap-2">
                         <img src={pdf} />
                         <a
-                          href={client.utilityBill}
+                          href={client?.utilityBill}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[16px] leading-[145%] text-primary hover:text-primary-dark underline"
@@ -738,12 +752,12 @@ export default function ClientDetails() {
                     </div>
                   )}
 
-                  {client.passport && (
+                  {client?.passport && (
                     <div className="flex items-center justify-between h-16 border border-[#C9CDD3] rounded-[16px] px-3">
                       <div className="flex items-center gap-2">
                         <img src={pdf} />
                         <a
-                          href={client.passport}
+                          href={client?.passport}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[16px] leading-[145%] text-primary hover:text-primary-dark underline"
@@ -755,9 +769,9 @@ export default function ClientDetails() {
                     </div>
                   )}
 
-                  {!client.validNIN &&
-                    !client.utilityBill &&
-                    !client.passport && (
+                  {!client?.validNIN &&
+                    !client?.utilityBill &&
+                    !client?.passport && (
                       <div className="flex items-center justify-center h-32 text-gray-500">
                         <p>No documents uploaded</p>
                       </div>
@@ -769,67 +783,8 @@ export default function ClientDetails() {
             {/* Loans Tab */}
             {activeTab === 3 && (
               <div className="space-y-6">
-                {client.loans.all.length > 0 ? (
+                {client?.loans.all.length > 0 ? (
                   <>
-                    {/* Loan Summary */}
-                    <div className="border-[0.6px] border-gray-200 rounded-[12px] w-full">
-                      <div className="h-16 flex flex-row gap-2 items-center bg-[#E6EAEF] p-4 rounded-t-[12px]">
-                        <img src={money} alt="money-icon" />
-                        <p className="md:text-[24px] text-[18px] font-semibold leading-[120%] text-gray-600">
-                          Loan Summary
-                        </p>
-                      </div>
-
-                      <div className="space-y-4 pb-4 p-4">
-                        <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
-                          <p className="w-full max-w-[130px] text-wrap font-medium">
-                            Total Loans:
-                          </p>
-                          <p>{client.loans.summary.totalLoans}</p>
-                        </div>
-
-                        <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
-                          <p className="w-full max-w-[130px] text-wrap font-medium">
-                            Active Loans:
-                          </p>
-                          <p>{client.loans.summary.totalActiveLoans}</p>
-                        </div>
-
-                        <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
-                          <p className="w-full max-w-[130px] text-wrap font-medium">
-                            Total Loan Amount:
-                          </p>
-                          <p>
-                            {formatCurrency(
-                              client.loans.summary.totalLoanAmount
-                            )}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
-                          <p className="w-full max-w-[130px] text-wrap font-medium">
-                            Total Repayment:
-                          </p>
-                          <p>
-                            {formatCurrency(
-                              client.loans.summary.totalRepaymentAmount
-                            )}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-6 p-2 px-4 text-[16px] leading-[145%] text-gray-600 border-b border-gray-200">
-                          <p className="w-full max-w-[130px] text-wrap font-medium">
-                            Monthly Payment:
-                          </p>
-                          <p>
-                            {formatCurrency(
-                              client.loans.summary.paymentSummary.monthly
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
                     {/* Loan History Table */}
                     <div className="border-[0.6px] border-gray-200 rounded-[12px] w-full">
                       <div className="h-16 flex flex-row gap-2 items-center bg-[#E6EAEF] p-4 rounded-t-[12px]">
@@ -841,7 +796,7 @@ export default function ClientDetails() {
 
                       <div className="p-4">
                         <CustomTable
-                          data={client.loans.all}
+                          data={client?.loans.all}
                           columns={loanColumns}
                           searchable={true}
                           searchPlaceholder="Search loans by ID, product, or status"
@@ -911,7 +866,7 @@ export default function ClientDetails() {
                       <Button
                         variant="success"
                         onClick={() =>
-                          navigate(`/loan-requests?clientId=${client._id}`)
+                          navigate(`/loan-requests?clientId=${client?._id}`)
                         }
                         className="px-6"
                       >
@@ -931,7 +886,7 @@ export default function ClientDetails() {
         open={showConfirmationModal}
         onClose={handleConfirmationClose}
         onConfirm={() =>
-          client && handleConfirmSuspend(client._id, client.status)
+          client && handleConfirmSuspend(client?._id, client?.status)
         }
         title={
           client?.status === "suspended" ? "Activate Client" : "Suspend Client"

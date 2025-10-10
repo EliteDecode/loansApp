@@ -4,29 +4,35 @@ import editIcon from "@/assets/icons/edit-icon.svg";
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
 import deactivateIcon from "@/assets/icons/deactivate-icon.svg";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import Button from "@/components/Button/Button";
 import { Tab, Tabs } from "@mui/material";
 import CreditAgentOverView from "@/components/ui/CreditAgentOverView";
 import CreditAgentsClients from "@/components/ui/CreditAgentsClients";
 import CreditAgentsLoans from "@/components/ui/CreditAgentsLoans";
 import Modal from "@/components/Modal/Modal";
-import { getCreditAgentDetails } from "@/services/features/agent/agentService";
-import type { CreditAgent } from "@/services/features/agent/agent.types";
-import { useProfileHook } from "@/hooks";
-import { getManagerDetails } from "@/services/features/director/directorService";
+import { getManagerDetails } from "@/services/features/director/directorSlice";
 import type { Manager } from "@/services/features/manager/manager.types";
+import { useProfileHook } from "@/hooks";
+import type { RootState, AppDispatch } from "@/store";
 
 export default function ManagersInfo() {
   const [openDeactivateAgentModal, setOpenDeactivateAgentModal] =
     useState(false);
-  const [manager, setManager] = useState<Manager | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
   const { role } = useProfileHook();
+
+  // Get manager data from Redux store
+  const { currentDirector, isFetching, isError, message } = useSelector(
+    (state: RootState) => state.director
+  );
+
+  const manager = currentDirector as Manager | null;
+  const error = isError ? message : null;
 
   const tabs = [
     { label: "Overview", id: "overview" },
@@ -44,31 +50,12 @@ export default function ManagersInfo() {
     initialTabIndex !== -1 ? initialTabIndex : 0
   );
 
-  // Fetch agent details
+  // Fetch manager details using Redux
   useEffect(() => {
-    const fetchAgentDetails = async () => {
-      if (!id) return;
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await getManagerDetails(id);
-
-        if (response.success) {
-          setManager(response.data);
-        } else {
-          setError(response.message || "Failed to fetch agent details");
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAgentDetails();
-  }, [id]);
+    if (id) {
+      dispatch(getManagerDetails(id));
+    }
+  }, [id, dispatch]);
 
   // update tab state when URL changes (back/forward nav)
   useEffect(() => {
@@ -86,7 +73,7 @@ export default function ManagersInfo() {
   };
 
   // Loading state
-  if (isLoading) {
+  if (isFetching) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -237,7 +224,7 @@ export default function ManagersInfo() {
           ))}
         </Tabs>
 
-        {value === 0 && <CreditAgentOverView agent={manager} />}
+        {value === 0 && <CreditAgentOverView agent={manager as any} />}
         {value === 1 && <CreditAgentsClients clients={manager?.clients} />}
         {value === 2 && (
           <CreditAgentsLoans loanRequests={manager?.loanRequests} />
@@ -273,33 +260,39 @@ export default function ManagersInfo() {
                 <p className="text-lg">
                   {manager.financeRecord?.unpaidMonths?.length || 0} months
                 </p>
-                {manager.financeRecord?.unpaidMonths?.length > 0 && (
-                  <div className="mt-2">
-                    {manager.financeRecord.unpaidMonths.map((month, index) => (
-                      <span
-                        key={index}
-                        className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded mr-1 mb-1"
-                      >
-                        {month}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {manager.financeRecord?.unpaidMonths &&
+                  manager.financeRecord.unpaidMonths.length > 0 && (
+                    <div className="mt-2">
+                      {manager.financeRecord.unpaidMonths.map(
+                        (month, index) => (
+                          <span
+                            key={index}
+                            className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded mr-1 mb-1"
+                          >
+                            {month}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  )}
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-700 mb-2">
                   Payment Records
                 </h4>
-                {manager.financeRecord?.paymentRecords?.length > 0 ? (
+                {manager.financeRecord?.paymentRecords &&
+                manager.financeRecord.paymentRecords.length > 0 ? (
                   <div>
                     <p className="text-lg font-semibold">
                       {manager.financeRecord.paymentRecords.length} payments
                     </p>
                     <p className="text-sm text-gray-600">
                       Last updated:{" "}
-                      {new Date(
-                        manager.financeRecord.updatedAt
-                      ).toLocaleDateString()}
+                      {manager.financeRecord.updatedAt
+                        ? new Date(
+                            manager.financeRecord.updatedAt
+                          ).toLocaleDateString()
+                        : "N/A"}
                     </p>
                   </div>
                 ) : (

@@ -2,6 +2,7 @@
 export interface Manager {
   _id: string;
   firstName: string;
+  lastName: string;
   gender: "male" | "female" | "other";
   dateOfBirth: string;
   email: string;
@@ -21,6 +22,17 @@ export interface Manager {
   canApproveLoans: boolean;
   canViewReports: boolean;
   status: "active" | "inactive" | "suspended";
+  managerID: string;
+  clients?: any[];
+  loanRequests?: any[];
+  financeRecord?: {
+    currentSalary?: number;
+    totalUnpaidAmount?: number;
+    unpaidMonths?: string[];
+    paymentRecords?: any[];
+    updatedAt?: string;
+  };
+  statistics?: any;
   createdAt: string;
   updatedAt: string;
 }

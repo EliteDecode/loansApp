@@ -6,24 +6,13 @@ export const createClient = async (data: any) => {
   return response.data;
 };
 
-export const getAllClients = async (params?: {
-  page?: number;
-  limit?: number;
-  status?: string;
-  search?: string;
-  createdByRole?: string;
-}) => {
-  const response = await axiosClient.get("/client/get-all", { params });
+export const getAllClients = async () => {
+  const response = await axiosClient.get("/client/get-all");
   return response.data;
 };
 
-export const getMyClients = async (params?: {
-  page?: number;
-  limit?: number;
-  status?: string;
-  search?: string;
-}) => {
-  const response = await axiosClient.get("/client/my-clients", { params });
+export const getMyClients = async () => {
+  const response = await axiosClient.get("/client/my-clients");
   return response.data;
 };
 

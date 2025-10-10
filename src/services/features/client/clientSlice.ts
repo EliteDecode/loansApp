@@ -8,6 +8,7 @@ const initialState: ClientState = {
   myClients: [],
   currentClient: null,
   isLoading: false,
+  isFetching: false,
   isSuccess: false,
   isError: false,
   message: "",
@@ -26,32 +27,15 @@ export const createClient = createAsyncThunkWithHandler(
 
 export const getAllClients = createAsyncThunkWithHandler(
   "client/getAllClients",
-  async (
-    _,
-    payload?: {
-      page?: number;
-      limit?: number;
-      status?: string;
-      search?: string;
-      createdByRole?: string;
-    }
-  ) => {
-    return await clientService.getAllClients(payload);
+  async () => {
+    return await clientService.getAllClients();
   }
 );
 
 export const getMyClients = createAsyncThunkWithHandler(
   "client/getMyClients",
-  async (
-    _,
-    payload?: {
-      page?: number;
-      limit?: number;
-      status?: string;
-      search?: string;
-    }
-  ) => {
-    return await clientService.getMyClients(payload);
+  async () => {
+    return await clientService.getMyClients();
   }
 );
 
@@ -91,6 +75,7 @@ const clientSlice = createSlice({
   reducers: {
     resetClient: (state) => {
       state.isLoading = false;
+      state.isFetching = false;
       state.isSuccess = false;
       state.isError = false;
       state.message = "";
@@ -100,6 +85,7 @@ const clientSlice = createSlice({
       state.myClients = [];
       state.currentClient = null;
       state.isLoading = false;
+      state.isFetching = false;
       state.isSuccess = false;
       state.isError = false;
       state.message = "";
@@ -131,22 +117,49 @@ const clientSlice = createSlice({
         state.isSuccess = false;
       })
       // Get All Clients
+      .addCase(getAllClients.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
       .addCase(getAllClients.fulfilled, (state, action) => {
-        state.clients = action.payload?.data?.clients || [];
-        state.totalCount = action.payload?.data?.totalCount || 0;
-        state.currentPage = action.payload?.data?.currentPage || 1;
-        state.totalPages = action.payload?.data?.totalPages || 1;
+        state.isFetching = false;
+        state.clients = action.payload?.data || [];
+      })
+      .addCase(getAllClients.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
       })
       // Get My Clients
+      .addCase(getMyClients.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
       .addCase(getMyClients.fulfilled, (state, action) => {
-        state.myClients = action.payload?.data?.clients || [];
-        state.totalCount = action.payload?.data?.totalCount || 0;
-        state.currentPage = action.payload?.data?.currentPage || 1;
-        state.totalPages = action.payload?.data?.totalPages || 1;
+        state.isFetching = false;
+        state.myClients = action.payload?.data || [];
+      })
+      .addCase(getMyClients.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
       })
       // Get Client Details
+      .addCase(getClientDetails.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
       .addCase(getClientDetails.fulfilled, (state, action) => {
+        state.isFetching = false;
         state.currentClient = action.payload?.data || null;
+      })
+      .addCase(getClientDetails.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
       })
       // Update Client
       .addCase(updateClient.pending, (state) => {

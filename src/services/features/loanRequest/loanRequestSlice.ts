@@ -9,6 +9,7 @@ const initialState: LoanRequestState = {
   pendingLoanRequests: [],
   currentLoanRequest: null,
   isLoading: false,
+  isFetching: false,
   isSuccess: false,
   isError: false,
   message: "",
@@ -161,29 +162,73 @@ const loanRequestSlice = createSlice({
         state.isSuccess = false;
       })
       // Get All Loan Requests
+      .addCase(getAllLoanRequests.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
       .addCase(getAllLoanRequests.fulfilled, (state, action) => {
+        state.isFetching = false;
         state.loanRequests = action.payload?.data?.loanRequests || [];
         state.totalCount = action.payload?.data?.totalCount || 0;
         state.currentPage = action.payload?.data?.currentPage || 1;
         state.totalPages = action.payload?.data?.totalPages || 1;
       })
+      .addCase(getAllLoanRequests.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
+      })
       // Get My Loan Requests
+      .addCase(getMyLoanRequests.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
       .addCase(getMyLoanRequests.fulfilled, (state, action) => {
+        state.isFetching = false;
         state.myLoanRequests = action.payload?.data?.loanRequests || [];
         state.totalCount = action.payload?.data?.totalCount || 0;
         state.currentPage = action.payload?.data?.currentPage || 1;
         state.totalPages = action.payload?.data?.totalPages || 1;
       })
+      .addCase(getMyLoanRequests.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
+      })
       // Get Pending Loan Requests
+      .addCase(getPendingLoanRequests.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
       .addCase(getPendingLoanRequests.fulfilled, (state, action) => {
+        state.isFetching = false;
         state.pendingLoanRequests = action.payload?.data?.loanRequests || [];
         state.totalCount = action.payload?.data?.totalCount || 0;
         state.currentPage = action.payload?.data?.currentPage || 1;
         state.totalPages = action.payload?.data?.totalPages || 1;
       })
+      .addCase(getPendingLoanRequests.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
+      })
       // Get Loan Request Details
+      .addCase(getLoanRequestDetails.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
       .addCase(getLoanRequestDetails.fulfilled, (state, action) => {
+        state.isFetching = false;
         state.currentLoanRequest = action.payload?.data || null;
+      })
+      .addCase(getLoanRequestDetails.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
       })
       // Update Loan Request
       .addCase(updateLoanRequest.pending, (state) => {

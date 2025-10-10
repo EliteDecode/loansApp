@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import arrowLeft from "@/assets/icons/arrow-left.svg";
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import Button from "@/components/Button/Button";
 import { Tab, Tabs } from "@mui/material";
 import CreditAgentOverView from "@/components/ui/CreditAgentOverView";
@@ -9,20 +10,27 @@ import CreditAgentsClients from "@/components/ui/CreditAgentsClients";
 import CreditAgentsLoans from "@/components/ui/CreditAgentsLoans";
 import Modal from "@/components/Modal/Modal";
 import { useProfileHook } from "@/hooks";
-import { getDirectorDetails } from "@/services/features/director/directorService";
+import { getDirectorDetails } from "@/services/features/director/directorSlice";
 import type { Director } from "@/services/features/director/director.types";
+import type { RootState, AppDispatch } from "@/store";
 
 export default function DirectionsInfo() {
   const [openDeactivateAgentModal, setOpenDeactivateAgentModal] =
     useState(false);
-  const [director, setDirector] = useState<Director | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
-  const { role } = useProfileHook();
+  const {} = useProfileHook();
+
+  // Get director data from Redux store
+  const { currentDirector, isFetching, isError, message } = useSelector(
+    (state: RootState) => state.director
+  );
+
+  const director = currentDirector as Director | null;
+  const error = isError ? message : null;
 
   const tabs = [
     { label: "Overview", id: "overview" },
@@ -40,33 +48,12 @@ export default function DirectionsInfo() {
     initialTabIndex !== -1 ? initialTabIndex : 0
   );
 
-  // Fetch director details
+  // Fetch director details using Redux
   useEffect(() => {
-    const fetchDirectorDetails = async () => {
-      if (!id) return;
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await getDirectorDetails(id);
-
-        if (response.success) {
-          setDirector(response.data);
-        } else {
-          console.log(response);
-          setError(response.message || "Failed to fetch director details");
-        }
-      } catch (err) {
-        console.log(err);
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDirectorDetails();
-  }, [id]);
+    if (id) {
+      dispatch(getDirectorDetails(id));
+    }
+  }, [id, dispatch]);
 
   // update tab state when URL changes (back/forward nav)
   useEffect(() => {
@@ -84,7 +71,7 @@ export default function DirectionsInfo() {
   };
 
   // Loading state
-  if (isLoading) {
+  if (isFetching) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -238,7 +225,7 @@ export default function DirectionsInfo() {
           ))}
         </Tabs>
 
-        {value === 0 && <CreditAgentOverView agent={director} />}
+        {value === 0 && <CreditAgentOverView agent={director as any} />}
         {value === 1 && <CreditAgentsClients clients={director?.clients} />}
         {value === 2 && (
           <CreditAgentsLoans loanRequests={director?.loanRequests} />
@@ -274,33 +261,39 @@ export default function DirectionsInfo() {
                 <p className="text-lg">
                   {director.financeRecord?.unpaidMonths?.length || 0} months
                 </p>
-                {director.financeRecord?.unpaidMonths?.length > 0 && (
-                  <div className="mt-2">
-                    {director.financeRecord.unpaidMonths.map((month, index) => (
-                      <span
-                        key={index}
-                        className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded mr-1 mb-1"
-                      >
-                        {month}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {director.financeRecord?.unpaidMonths &&
+                  director.financeRecord.unpaidMonths.length > 0 && (
+                    <div className="mt-2">
+                      {director.financeRecord.unpaidMonths.map(
+                        (month, index) => (
+                          <span
+                            key={index}
+                            className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded mr-1 mb-1"
+                          >
+                            {month}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  )}
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-700 mb-2">
                   Payment Records
                 </h4>
-                {director.financeRecord?.paymentRecords?.length > 0 ? (
+                {director.financeRecord?.paymentRecords &&
+                director.financeRecord.paymentRecords.length > 0 ? (
                   <div>
                     <p className="text-lg font-semibold">
                       {director.financeRecord.paymentRecords.length} payments
                     </p>
                     <p className="text-sm text-gray-600">
                       Last updated:{" "}
-                      {new Date(
-                        director.financeRecord.updatedAt
-                      ).toLocaleDateString()}
+                      {director.financeRecord.updatedAt
+                        ? new Date(
+                            director.financeRecord.updatedAt
+                          ).toLocaleDateString()
+                        : "N/A"}
                     </p>
                   </div>
                 ) : (

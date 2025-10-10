@@ -10,21 +10,29 @@ import CreditAgentOverView from "@/components/ui/CreditAgentOverView";
 import CreditAgentsClients from "@/components/ui/CreditAgentsClients";
 import CreditAgentsLoans from "@/components/ui/CreditAgentsLoans";
 import Modal from "@/components/Modal/Modal";
-import { getCreditAgentDetails } from "@/services/features/agent/agentService";
+import { getCreditAgentDetails } from "@/services/features/agent/agentSlice";
 import type { CreditAgent } from "@/services/features/agent/agent.types";
 import { useProfileHook } from "@/hooks";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState, AppDispatch } from "@/store";
 
 export default function CreditAgentsInfo() {
   const [openDeactivateAgentModal, setOpenDeactivateAgentModal] =
     useState(false);
-  const [agent, setAgent] = useState<CreditAgent | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
   const { role } = useProfileHook();
+
+  // Get data from Redux store
+  const { currentAgent, isFetching, isError, message } = useSelector(
+    (state: RootState) => state.agent
+  );
+
+  const agent = currentAgent as CreditAgent | null;
+  const error = isError ? message : null;
 
   const tabs = [
     { label: "Overview", id: "overview" },
@@ -42,31 +50,12 @@ export default function CreditAgentsInfo() {
     initialTabIndex !== -1 ? initialTabIndex : 0
   );
 
-  // Fetch agent details
+  // Fetch agent details using Redux
   useEffect(() => {
-    const fetchAgentDetails = async () => {
-      if (!id) return;
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await getCreditAgentDetails(id);
-
-        if (response.success) {
-          setAgent(response.data);
-        } else {
-          setError(response.message || "Failed to fetch agent details");
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAgentDetails();
-  }, [id]);
+    if (id) {
+      dispatch(getCreditAgentDetails(id));
+    }
+  }, [id, dispatch]);
 
   // update tab state when URL changes (back/forward nav)
   useEffect(() => {
@@ -84,7 +73,7 @@ export default function CreditAgentsInfo() {
   };
 
   // Loading state
-  if (isLoading) {
+  if (isFetching) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

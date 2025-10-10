@@ -9,6 +9,7 @@ const initialState: LoanProductState = {
   activeLoanProducts: [],
   currentLoanProduct: null,
   isLoading: false,
+  isFetching: false,
   isSuccess: false,
   isError: false,
   message: "",
@@ -144,26 +145,59 @@ const loanProductSlice = createSlice({
         state.isSuccess = false;
       })
       // Get All Loan Products
+      .addCase(getAllLoanProducts.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
       .addCase(getAllLoanProducts.fulfilled, (state, action) => {
+        state.isFetching = false;
         state.loanProducts = action.payload?.data || [];
         state.totalCount = action.payload?.data?.totalCount || 0;
         state.currentPage = action.payload?.data?.currentPage || 1;
         state.totalPages = action.payload?.data?.totalPages || 1;
       })
+      .addCase(getAllLoanProducts.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
+      })
       // Get My Loan Products
+      .addCase(getMyLoanProducts.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
       .addCase(getMyLoanProducts.fulfilled, (state, action) => {
+        state.isFetching = false;
         state.myLoanProducts = action.payload?.data?.loanProducts || [];
         state.totalCount = action.payload?.data?.totalCount || 0;
         state.currentPage = action.payload?.data?.currentPage || 1;
         state.totalPages = action.payload?.data?.totalPages || 1;
       })
+      .addCase(getMyLoanProducts.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
+      })
       // Get Active Loan Products
+      .addCase(getActiveLoanProducts.pending, (state) => {
+        state.isFetching = true;
+        state.isError = false;
+        state.message = "";
+      })
       .addCase(getActiveLoanProducts.fulfilled, (state, action) => {
+        state.isFetching = false;
         console.log(action);
         state.activeLoanProducts = action.payload?.data?.loanProducts || [];
         state.totalCount = action.payload?.data?.totalCount || 0;
         state.currentPage = action.payload?.data?.currentPage || 1;
         state.totalPages = action.payload?.data?.totalPages || 1;
+      })
+      .addCase(getActiveLoanProducts.rejected, (state, action) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.message = action.payload as string;
       })
       // Get Loan Product Details
       .addCase(getLoanProductDetails.fulfilled, (state, action) => {

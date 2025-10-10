@@ -108,6 +108,7 @@ export interface LoanRequestState {
   pendingLoanRequests: LoanRequest[];
   currentLoanRequest: LoanRequest | null;
   isLoading: boolean;
+  isFetching: boolean;
   isSuccess: boolean;
   isError: boolean;
   message: string;
