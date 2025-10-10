@@ -1,5 +1,6 @@
 import PageHeader from "@/components/PageHeader/PageHeader";
 import CreditAgents from "@/components/ui/CreditAgents";
+import Directors from "@/components/ui/Directors";
 import Managers from "@/components/ui/Managers";
 import { Tab, Tabs } from "@mui/material";
 import React, { useEffect, useState } from "react";
@@ -11,6 +12,7 @@ export default function UserManagement() {
   const tabs = [
     { label: "Credit Agents", id: "credit-agents" },
     { label: "Managers", id: "managers" },
+    { label: "Directors", id: "directors" },
   ];
 
   // get tab from URL (default to first tab)
@@ -97,6 +99,7 @@ export default function UserManagement() {
 
       {value === 0 && <CreditAgents />}
       {value === 1 && <Managers />}
+      {value === 2 && <Directors />}
     </div>
   );
 }

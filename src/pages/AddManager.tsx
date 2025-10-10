@@ -28,7 +28,7 @@ import FileUploadWithProgress from "@/components/FileUploadWithProgress/FileUplo
 import ReviewAgentInfo from "@/components/ui/ReviewAgentInfo";
 import SuccessModal from "@/components/modals/SuccessModal/SuccessModal";
 import ErrorModal from "@/components/modals/ErrorModal/ErrorModal";
-import { createCreditAgent, resetAgent } from "@/services/features";
+import { createManager, resetDirector } from "@/services/features";
 import type { AppDispatch, RootState } from "@/store";
 import dayjs from "dayjs";
 
@@ -40,7 +40,7 @@ const steps = [
   "Review",
 ];
 
-export interface AgentFormValues {
+export interface ManagerFormValues {
   firstName: string;
   lastName: string;
   gender: "male" | "female";
@@ -63,7 +63,7 @@ export interface AgentFormValues {
   salaryAmount: string | number;
 }
 
-const initialValues: AgentFormValues = {
+const initialValues: ManagerFormValues = {
   firstName: "",
   lastName: "",
   gender: "male",
@@ -118,7 +118,7 @@ const generatePassword = (): string => {
     .join("");
 };
 
-export default function AddAgent() {
+export default function AddManager() {
   const [activeStep, setActiveStep] = useState(0);
   const [shouldSubmit, setShouldSubmit] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -131,18 +131,18 @@ export default function AddAgent() {
 
   // Get Redux state for agent creation
   const { isLoading, isSuccess, isError, message } = useSelector(
-    (state: RootState) => state.agent
+    (state: RootState) => state.director
   );
   console.log(message);
 
   // Clear agent state when component mounts
   useEffect(() => {
-    dispatch(resetAgent());
+    dispatch(resetDirector());
   }, [dispatch]);
 
   // Handle success state
   useEffect(() => {
-    if (isSuccess && message === "Credit agent created successfully") {
+    if (isSuccess && message === "Manager created successfully") {
       setShowSuccessModal(true);
     }
   }, [isSuccess, message]);
@@ -158,23 +158,23 @@ export default function AddAgent() {
   // Handle success modal close
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    dispatch(resetAgent()); // Clear the success state
-    navigate("/credit-agents");
+    dispatch(resetDirector()); // Clear the success state
+    navigate("/managers");
   };
 
   // Handle error modal close
   const handleErrorModalClose = () => {
     setShowErrorModal(false);
     setErrorMessage("");
-    dispatch(resetAgent()); // Clear the error state
+    dispatch(resetDirector()); // Clear the error state
   };
 
   const handleFinish = async (
-    values: AgentFormValues,
-    _helpers?: FormikHelpers<AgentFormValues>
+    values: ManagerFormValues,
+    _helpers?: FormikHelpers<ManagerFormValues>
   ) => {
     // Prepare data for API call
-    const agentData = {
+    const managerData = {
       firstName: values.firstName,
       lastName: values.lastName,
       gender: values.gender,
@@ -197,7 +197,7 @@ export default function AddAgent() {
       salaryAmount: values.salaryAmount,
     };
 
-    await dispatch(createCreditAgent(agentData));
+    await dispatch(createManager(managerData));
   };
 
   const handleNext = async (
@@ -326,7 +326,7 @@ export default function AddAgent() {
     <div className="md:p-8 p-4 pt-0">
       <div className="md:pb-8 mb-4">
         <h1 className="md:text-[28px] text-[18px] md:leading-[120%] leading-[145%] font-semibold tracking-[-2%] text-gray-700">
-          Add New Agent
+          Add New Manager
         </h1>
       </div>
 
@@ -383,9 +383,9 @@ export default function AddAgent() {
       <SuccessModal
         open={showSuccessModal}
         onClose={handleSuccessModalClose}
-        title="Agent Created Successfully!"
-        message="The new credit agent has been created successfully and can now access the system with the provided credentials."
-        confirmText="View Agents"
+        title="Manager Created Successfully!"
+        message="The new manager has been created successfully and can now access the system with the provided credentials."
+        confirmText="View Manager"
         onConfirm={handleSuccessModalClose}
       />
 
@@ -405,7 +405,7 @@ export default function AddAgent() {
             initialValues={initialValues}
             validationSchema={validationSchemas[activeStep]}
             onSubmit={(values, formikHelpers) => {
-              // Only trigger submit if the user clicked "Create Agent"
+              // Only trigger submit if the user clicked "Create Manager"
               if (shouldSubmit && activeStep === steps.length - 1) {
                 handleFinish(values, formikHelpers);
               } else {
@@ -423,18 +423,18 @@ export default function AddAgent() {
                         name="firstName"
                         type="text"
                         label="First Name"
-                        placeholder="Enter agent's first name"
+                        placeholder="Enter manager's first name"
                       />
 
                       <TextInput
                         name="lastName"
                         type="text"
                         label="Last Name"
-                        placeholder="Enter agent's last name"
+                        placeholder="Enter manager's last name"
                       />
 
                       <SelectInput name="gender" label="Gender">
-                        <option value="">Select agent's gender</option>
+                        <option value="">Select manager's gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
                       </SelectInput>
@@ -475,7 +475,7 @@ export default function AddAgent() {
                         name="email"
                         type="email"
                         label="Email Address"
-                        placeholder="Enter agent's email address"
+                        placeholder="Enter manager's email address"
                       />
 
                       <Field name="phoneNumber">
@@ -525,7 +525,7 @@ export default function AddAgent() {
                                 name={field.name}
                                 value={displayValue}
                                 onChange={handleChange}
-                                placeholder="Enter agent's phone number (+234XXXXXXXXXX)"
+                                placeholder="Enter manager's phone number (+234XXXXXXXXXX)"
                                 className="w-full h-14 px-4 outline-primary border rounded-[6px] placeholder:text-gray-400 focus:outline-none"
                               />
                               <ErrorMessage
@@ -542,21 +542,21 @@ export default function AddAgent() {
                         name="residentialAddress"
                         type="text"
                         label="Residential Address"
-                        placeholder="Enter agent's residential address"
+                        placeholder="Enter manager's residential address"
                       />
 
                       <TextInput
                         name="stateOfResidence"
                         type="text"
                         label="State of Residence"
-                        placeholder="Enter agent's state of residence"
+                        placeholder="Enter manager's state of residence"
                       />
 
                       <TextInput
                         name="lgaOfResidence"
                         type="text"
                         label="LGA of Residence"
-                        placeholder="Enter agent's LGA of residence"
+                        placeholder="Enter manager's LGA of residence"
                       />
                     </div>
                   </div>
@@ -648,7 +648,7 @@ export default function AddAgent() {
                               label="Valid NIN"
                               accept="image/*,application/pdf"
                               maxSizeMB={5}
-                              folder="loan-app/agents"
+                              folder="loan-app/managers"
                               value={field.value}
                               onFileUploaded={(url) => {
                                 form.setFieldValue(field.name, url);
@@ -679,7 +679,7 @@ export default function AddAgent() {
                               label="Utility Bill"
                               accept="image/*,application/pdf"
                               maxSizeMB={5}
-                              folder="loan-app/agents"
+                              folder="loan-app/managers"
                               value={field.value}
                               onFileUploaded={(url) => {
                                 form.setFieldValue(field.name, url);
@@ -710,7 +710,7 @@ export default function AddAgent() {
                               label="Passport photograph"
                               accept="image/*,application/pdf"
                               maxSizeMB={5}
-                              folder="loan-app/agents"
+                              folder="loan-app/managers"
                               value={field.value}
                               onFileUploaded={(url) => {
                                 form.setFieldValue(field.name, url);
@@ -741,7 +741,7 @@ export default function AddAgent() {
                               label="Employment Letter"
                               accept="image/*,application/pdf"
                               maxSizeMB={5}
-                              folder="loan-app/agents"
+                              folder="loan-app/managers"
                               value={field.value}
                               onFileUploaded={(url) => {
                                 form.setFieldValue(field.name, url);
@@ -777,7 +777,7 @@ export default function AddAgent() {
                         System Access Credentials
                       </h3>
                       <p className="text-sm text-primary leading-relaxed">
-                        Set up login credentials for the new agent. Password
+                        Set up login credentials for the new manager. Password
                         must be at least 8 characters long, including uppercase,
                         lowercase, numbers, and special characters (
                         <span className="font-mono">@#$&</span>).
@@ -956,7 +956,7 @@ export default function AddAgent() {
                       disabled={isLoading}
                       onClick={() => setShouldSubmit(true)}
                     >
-                      {isLoading ? "Creating Agent..." : "Create Agent"}
+                      {isLoading ? "Creating manager..." : "Create manager"}
                     </Button>
                   ) : (
                     <Button

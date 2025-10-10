@@ -11,6 +11,8 @@ const initialState: DirectorState = {
   currentDirector: currentDirectorFromStorage
     ? JSON.parse(currentDirectorFromStorage)
     : null,
+  managers: [], //change later
+  settings: null,
   isLoading: false,
   isSuccess: false,
   isError: false,
@@ -98,6 +100,13 @@ export const getDirectorDetails = createAsyncThunkWithHandler(
   }
 );
 
+export const getSystemSettings = createAsyncThunkWithHandler(
+  "director/getSystemSettings",
+  async () => {
+    return await directorService.getSystemSettings();
+  }
+);
+
 export const updateDirector = createAsyncThunkWithHandler(
   "director/updateDirector",
   async (payload: { directorId: string; data: any }, _) => {
@@ -139,8 +148,15 @@ export const unfreezeAccount = createAsyncThunkWithHandler(
 
 export const restoreSystem = createAsyncThunkWithHandler(
   "director/restoreSystem",
-  async (payload: { reason: string }, _) => {
+  async (payload: { password: string }, _) => {
     return await directorService.restoreSystem(payload);
+  }
+);
+
+export const shutdownSystem = createAsyncThunkWithHandler(
+  "director/shutdownSystem",
+  async (payload: { reason: string; password: string }, _) => {
+    return await directorService.shutdownSystem(payload);
   }
 );
 
@@ -283,7 +299,7 @@ const directorSlice = createSlice({
       })
       // Get All Directors
       .addCase(getAllDirectors.fulfilled, (state, action) => {
-        state.directors = action.payload?.data?.directors || [];
+        state.directors = action.payload?.data || [];
         state.totalCount = action.payload?.data?.totalCount || 0;
         state.currentPage = action.payload?.data?.currentPage || 1;
         state.totalPages = action.payload?.data?.totalPages || 1;
@@ -307,7 +323,114 @@ const directorSlice = createSlice({
         state.isError = true;
         state.message = action.payload as string;
         state.isSuccess = false;
+      })
+      //System shut down
+      .addCase(shutdownSystem.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(shutdownSystem.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.message = action.payload?.message || "System shutdown successful";
+      })
+      .addCase(shutdownSystem.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = false;
+        state.isError = true;
+        state.message = action.payload as string;
+      })
+
+      // Get System Settings
+      .addCase(getSystemSettings.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(getSystemSettings.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.settings = action.payload?.data || null;
+        state.message =
+          action.payload?.message || "System settings retrieved successfully";
+      })
+      .addCase(getSystemSettings.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = false;
+        state.isError = true;
+        state.message = action.payload as string;
+      })
+
+      // Create Director
+      .addCase(createManager.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(createManager.fulfilled, (state, action) => {
+        state.message =
+          action.payload?.message || "Director created successfully";
+        state.isSuccess = true;
+        state.isError = false;
+        state.isLoading = false;
+      })
+      .addCase(createManager.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload as string;
+        state.isSuccess = false;
+      })
+
+      // 🧭 Get All Managers
+      .addCase(getAllManagers.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(getAllManagers.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.managers = action.payload?.data || [];
+        state.message =
+          action.payload?.message || "Managers retrieved successfully.";
+      })
+      .addCase(getAllManagers.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = false;
+        state.isError = true;
+        state.message =
+          action.payload?.message ||
+          "Failed to retrieve managers. Please try again.";
+      })
+
+      // Update Credit Agent
+      .addCase(updateManager.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(updateManager.fulfilled, (state, _) => {
+        state.isLoading = false;
+        state.isError = false;
+        state.isSuccess = true;
+        state.message = "manager updated successfully";
+      })
+      .addCase(updateManager.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload as string;
+        state.isSuccess = false;
       });
+
     // Logout - Now handled by auth service
   },
 });

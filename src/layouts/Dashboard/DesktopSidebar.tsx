@@ -9,13 +9,20 @@ import type { RootState } from "@/store";
 // ✅ Props type
 interface DesktopSidebarProps {
   setOpenShutdownModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpenRestoreModal: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const DesktopSidebar = ({ setOpenShutdownModal }: DesktopSidebarProps) => {
+const DesktopSidebar = ({
+  setOpenShutdownModal,
+  setOpenRestoreModal,
+  isShutdown,
+}: DesktopSidebarProps) => {
   const location = useLocation();
-  const { role } = useSelector((state: RootState) => state.auth);
+  const { role, user } = useSelector((state: RootState) => state.auth);
   const firstSegment = location.pathname.split("/")[1];
   const filteredSidebarLinks = getFilteredSidebarLinks(role);
+
+  console.log(user);
 
   return (
     <section className="fixed">
@@ -62,13 +69,23 @@ const DesktopSidebar = ({ setOpenShutdownModal }: DesktopSidebarProps) => {
           <div className="mt-8 px-6  text-[14px] leading-[145%]">
             <p className="font-medium text-[#CB1A14]">System Control</p>
 
-            <div
-              className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
-              onClick={() => setOpenShutdownModal(true)}
-            >
-              <img src={info} />
-              <p>Shutdown System</p>
-            </div>
+            {isShutdown === true ? (
+              <div
+                className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
+                onClick={() => setOpenRestoreModal(true)}
+              >
+                <img src={info} />
+                <p>Restore System</p>
+              </div>
+            ) : (
+              <div
+                className="flex items-center gap-3 h-[44px] cursor-pointer text-gray-700"
+                onClick={() => setOpenShutdownModal(true)}
+              >
+                <img src={info} />
+                <p>Shutdown System</p>
+              </div>
+            )}
           </div>
         )}
       </motion.div>

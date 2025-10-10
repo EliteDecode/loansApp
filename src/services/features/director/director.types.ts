@@ -123,6 +123,29 @@ export interface SystemControlRequest {
   reason: string;
 }
 
+export interface SystemStatus {
+  _id: string;
+  __v: number;
+  createdAt: string;
+  updatedAt: string;
+  isShutdown: boolean;
+  shutdownAt: string | null;
+  shutdownBy: string | null;
+  shutdownByRole: string | null;
+  shutdownReason: string | null;
+}
+
+export interface SystemSettings {
+  systemStatus: SystemStatus;
+  lastUpdated: string;
+}
+
+export interface SystemSettingsResponse {
+  success: boolean;
+  message: string;
+  data: SystemSettings;
+}
+
 export interface DirectorListResponse {
   success: boolean;
   message: string;
@@ -142,7 +165,9 @@ export interface DirectorDetailsResponse {
 
 export interface DirectorState {
   directors: Director[];
+  managers: Managers[];
   currentDirector: Director | null;
+  settings: SystemSettings | null;
   isLoading: boolean;
   isSuccess: boolean;
   isError: boolean;
@@ -150,4 +175,38 @@ export interface DirectorState {
   totalCount: number;
   currentPage: number;
   totalPages: number;
+}
+
+export interface Managers {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  gender: "male" | "female" | "other";
+  dateOfBirth: string; // ISO date string
+  email: string;
+  phoneNumber: string;
+  residentialAddress: string;
+  stateOfResidence: string;
+  lgaOfResidence: string;
+  bankName: string;
+  bankAccount: string;
+  managerID: string;
+  employmentType: "full-time" | "part-time" | "contract";
+  dateOfEmployment: string; // ISO date string
+  status: "active" | "inactive" | "suspended";
+
+  validNIN?: string; // URL
+  utilityBill?: string; // URL
+  passport?: string; // URL
+  employmentLetter?: string; // URL
+
+  canCreateCreditAgents: boolean;
+  canApproveLoans: boolean;
+  canViewReports: boolean;
+  canProcessSalary: boolean;
+
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  __v?: number;
 }

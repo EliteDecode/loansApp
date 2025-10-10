@@ -149,6 +149,7 @@ const authSlice = createSlice({
 
         // Store user data (without role since it's separate)
         state.user = action.payload?.data?.user || null;
+        console.log(action);
 
         // Store tokens, role, and user data in localStorage
         localStorage.setItem("asavic_token", JSON.stringify(state.token));

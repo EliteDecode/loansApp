@@ -3,6 +3,10 @@ import * as Yup from "yup";
 import lock from "@/assets/icons/lock.svg";
 import Button from "../Button/Button";
 import TextInput from "../TextInput/TextInput";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "@/store";
+import { getSystemSettings, restoreSystem } from "@/services/features";
+import { showErrorToast, showSuccessToast } from "@/lib/toastUtils";
 
 // ✅ Validation schema
 const validationSchema = Yup.object().shape({
@@ -20,13 +24,28 @@ export default function RestorePassword({
   onClose,
   onConfirm,
 }: RestorePasswordProps) {
+  const dispatch = useDispatch<AppDispatch>();
+
   return (
     <Formik
       initialValues={{ password: "" }}
       validationSchema={validationSchema}
-      onSubmit={(values, { setSubmitting }) => {
-        console.log("🔑 Password submitted:", values);
-        onConfirm?.(values);
+      onSubmit={async (values, { setSubmitting }) => {
+        console.log(values);
+        try {
+          const res = await dispatch(restoreSystem(values)).unwrap();
+          showSuccessToast(res?.message || "System restored successfully."); // friendly message
+          dispatch(getSystemSettings());
+          onClose();
+        } catch (err: any) {
+          const message =
+            err?.message ||
+            err?.response?.data?.message ||
+            "Failed to restore system. Try again.";
+          showErrorToast(message);
+        } finally {
+          setSubmitting(false);
+        }
         setSubmitting(false);
       }}
     >

@@ -312,9 +312,10 @@ export default function AddClient() {
 
                     <TextInput
                       name="monthlyIncome"
-                      type="text"
+                      type="tel"
+                      amount={true}
                       label="Monthly Income"
-                      placeholder="Enter monthly income	"
+                      placeholder="Enter monthly income"
                     />
 
                     <TextInput

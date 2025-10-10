@@ -7,37 +7,38 @@ import { useDispatch, useSelector } from "react-redux";
 import CustomTable from "@/components/CustomTable/CustomTable";
 import type { CustomTableColumn } from "@/components/CustomTable/CustomTable.types";
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
-import { getAllCreditAgents } from "@/services/features";
+import { getAllDirectors, getAllManagers } from "@/services/features";
 import type { AppDispatch, RootState } from "@/store";
-import type { CreditAgent } from "@/services/features/agent/agent.types";
+import type { Manager } from "@/services/features/manager/manager.types";
+import type { Director } from "@/services/features/director/director.types";
 
-export default function CreditAgents() {
+export default function Directors() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
   // Get Redux state
-  const { creditAgents, isLoading } = useSelector(
-    (state: RootState) => state.agent
+  const { directors, isLoading } = useSelector(
+    (state: RootState) => state.director
   );
-  console.log(creditAgents);
+  console.log(directors);
 
   // Fetch credit agents on component mount
   useEffect(() => {
-    dispatch(getAllCreditAgents());
+    dispatch(getAllDirectors());
   }, [dispatch]);
 
-  const columns: CustomTableColumn<CreditAgent>[] = [
+  const columns: CustomTableColumn<Manager>[] = [
     {
-      header: "AGENT ID",
-      accessor: "creditAgentID",
+      header: "DIRECTOR ID",
+      accessor: "directorID",
       render: (value: string) => (
         <span className="font-medium text-gray-900">{value}</span>
       ),
     },
     {
-      header: "AGENT NAME",
+      header: "DIRECTOR NAME",
       accessor: "firstName",
-      render: (_: any, row: CreditAgent) => (
+      render: (_: any, row: Director) => (
         <div className="flex items-center gap-3">
           <img
             src={row.passport || profileImage}
@@ -114,14 +115,12 @@ export default function CreditAgents() {
       accessor: "_id",
       sortable: false,
       width: "120px",
-      render: (_: string, row: CreditAgent) => (
+      render: (_: string, row: Manager) => (
         <Button
           variant="outline"
           height="h-8"
           width="w-24"
-          onClick={() =>
-            navigate(`/credit-agents/credit-agents-info/${row._id}`)
-          }
+          onClick={() => navigate(`/user-management/director-info/${row._id}`)}
         >
           View Details
         </Button>
@@ -130,42 +129,42 @@ export default function CreditAgents() {
   ];
 
   // Use real data from Redux state
-  const data = creditAgents;
+  const data = directors || [];
 
   return (
     <div>
       <div className="flex items-center mb-5 justify-end">
         <Button
           icon={<img src={add} alt="add" />}
-          onClick={() => navigate("/credit-agents/new")}
+          onClick={() => navigate("/user-management/director/new")}
         >
-          Add New Agents
+          Add New Director
         </Button>
       </div>
 
       <div className="bg-white rounded-xl space-y-[27.5px]">
-        <CustomTable
+        <CustomTable<Director>
           data={data}
           columns={columns}
           searchable={true}
-          searchPlaceholder="Search by agent ID, name, email, or status"
+          searchPlaceholder="Search by manager ID, name, email, or status"
           searchFields={
             [
-              "creditAgentID",
+              "directorID",
               "firstName",
               "lastName",
               "email",
               "status",
-            ] as (keyof CreditAgent)[]
+            ] as (keyof Manager)[]
           }
           pagination={true}
           pageSize={10}
           showPageSizeSelector={true}
           pageSizeOptions={[5, 10, 20, 50]}
-          emptyMessage="No credit agents found"
+          emptyMessage="No directors found"
           loading={isLoading}
           onRowClick={(row) => {
-            navigate(`/credit-agents/credit-agents-info/${row._id}`);
+            navigate(`/user-management/director-info/${row._id}`);
           }}
         />
       </div>

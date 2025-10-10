@@ -48,12 +48,18 @@ export const getAllDirectors = async (params?: {
   status?: string;
   search?: string;
 }) => {
-  const response = await axiosClient.get("/director/", { params });
+  const response = await axiosClient.get("/director", { params });
+  console.log(response);
   return response.data;
 };
 
 export const getDirectorDetails = async (directorId: string) => {
   const response = await axiosClient.get(`/director/get-details/${directorId}`);
+  return response.data;
+};
+
+export const getSystemSettings = async () => {
+  const response = await axiosClient.get(`/system-settings`);
   return response.data;
 };
 
@@ -94,8 +100,16 @@ export const unfreezeAccount = async (data: {
   return response.data;
 };
 
-export const restoreSystem = async (data: { reason: string }) => {
-  const response = await axiosClient.post("/director/restore", data);
+export const restoreSystem = async (data: { password: string }) => {
+  const response = await axiosClient.post("/restore", data);
+  return response.data;
+};
+
+export const shutdownSystem = async (data: {
+  reason: string;
+  password: string;
+}) => {
+  const response = await axiosClient.post("/shutdown", data);
   return response.data;
 };
 
@@ -155,6 +169,7 @@ const directorService = {
   createDirector,
   getAllDirectors,
   getDirectorDetails,
+  getSystemSettings,
   updateDirector,
   toggleDirectorStatus,
   deleteDirector,
@@ -162,6 +177,7 @@ const directorService = {
   freezeAccount,
   unfreezeAccount,
   restoreSystem,
+  shutdownSystem,
   // Manager Management
   createManager,
   getAllManagers,
