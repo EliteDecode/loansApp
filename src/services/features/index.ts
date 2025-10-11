@@ -6,3 +6,4 @@ export * from "./agent/agentSlice";
 export * from "./client/clientSlice";
 export * from "./loanProduct/loanProductSlice";
 export * from "./loanRequest/loanRequestSlice";
+export * from "./finances/financesSlice";

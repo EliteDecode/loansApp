@@ -6,6 +6,7 @@ import agentReducer from "@/services/features/agent/agentSlice";
 import clientReducer from "@/services/features/client/clientSlice";
 import loanProductReducer from "@/services/features/loanProduct/loanProductSlice";
 import loanRequestReducer from "@/services/features/loanRequest/loanRequestSlice";
+import financesReducer from "@/services/features/finances/financesSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     client: clientReducer,
     loanProduct: loanProductReducer,
     loanRequest: loanRequestReducer,
+    finances: financesReducer,
   },
 });
 

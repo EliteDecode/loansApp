@@ -6,7 +6,7 @@ import money1 from "@/assets/icons/money-1-coloured.svg";
 import infoCircle from "@/assets/icons/info-circle.svg";
 import LoanMetricsCard from "@/components/LoanMetricsCard/LoanMetricsCard";
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import rightArrow from "@/assets/icons/rightArrow.svg";
 import leftArrow from "@/assets/icons/leftArrow.svg";
@@ -21,121 +21,167 @@ import Modal from "@/components/Modal/Modal";
 import ProcessSalaryPaymentsModal from "@/components/ui/ProcessSalaryPaymentsModal";
 import EditSalaryModal from "@/components/ui/EditSalaryModal";
 import MarkAsPaidModal from "./MarkAsPaidModal";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "@/store";
+import { getAllFinancesRecord, getFinancesReports } from "@/services/features";
+import CustomTable from "@/components/CustomTable/CustomTable";
+import type { CustomTableColumn } from "@/components/CustomTable/CustomTable.types";
+import type { FinanceRecord } from "@/services/features/finances/finances.types";
+import { useNavigate } from "react-router-dom";
+
 export default function Finance() {
-  const [age, setAge] = useState("");
   const [processSalaryPaymentsModal, setProcessSalaryPaymentsModal] =
     useState(false);
   const [editSalaryModal, seteEditSalaryModal] = useState(false);
   const [markAsPaidModal, setMarkAsPaidModal] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<FinanceRecord | null>(
+    null
+  );
 
-  const columns: Column[] = [
-    { header: "USER ID", accessor: "name" },
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { records, isLoading, error, reports, isLoadingReport } = useSelector(
+    (state: RootState) => state.finances
+  );
+
+  const summary = reports?.summary || {};
+
+  useEffect(() => {
+    dispatch(getAllFinancesRecord({ page: 1, limit: 10 }));
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(getFinancesReports());
+  }, [dispatch]);
+
+  console.log(records, isLoading, error);
+
+  const navigate = useNavigate();
+
+  const columns: CustomTableColumn<FinanceRecord>[] = [
     {
-      header: "NAME",
-      accessor: "phoneNumber",
-      render: (_: any, row: any) => (
-        <div className="flex items-center flex-row gap-3">
-          <img
-            src={profileImage}
-            alt=""
-            className="w-10 h-10 object-cover rounded-full "
-          />
-          <p className="max-w-[100px] break-words">{row.name}</p>
+      header: "STAFF NAME",
+      accessor: "staffName",
+      render: (_: string, row: FinanceRecord) => (
+        <div className="flex items-center gap-3">
+          <div>
+            <p className="font-medium text-gray-900">{row.staffName}</p>
+            <p className="text-sm text-gray-500">{row.staffEmail}</p>
+          </div>
         </div>
       ),
     },
     {
-      header: "ROLE",
-      accessor: "status",
+      header: "STAFF TYPE",
+      accessor: "staffType",
       render: (value: string) => (
-        <span
-          className={`px-3 py-1 text-[12px] leading-[145%] rounded-[12px] ${
-            {
-              Manager: "bg-[#8B15C21A] text-[#8B15C2]",
-              Agent: "bg-[#0088FF1A] text-[#0088FF]",
-            }[value] || "bg-gray-100 text-gray-600" // fallback for unknown values
-          }`}
-        >
-          {value}
+        <span className="capitalize text-gray-700">
+          {value?.replace(/([A-Z])/g, " $1")}
         </span>
       ),
     },
-    { header: "MONTHLY SALARY", accessor: "phoneNumber" },
-
     {
-      header: "STATUS",
-      accessor: "status",
-      render: (value: string) => (
-        <span
-          className={`px-2 text-[12px] leading-[145%] rounded-[12px] ${
-            {
-              Paid: "bg-[#0F973D1A] text-[#0F973D]",
-              Pending: "bg-[#CB1A141A] text-[#CB1A14]",
-            }[value] || "bg-gray-100 text-gray-600" // fallback for unknown values
-          }`}
-        >
-          {value}
+      header: "CURRENT SALARY",
+      accessor: "currentSalary",
+      render: (value: number) => (
+        <span className="font-medium text-gray-800">
+          ₦{value?.toLocaleString() ?? "N/A"}
         </span>
       ),
     },
-    { header: "LAST PAYMENT", accessor: "phoneNumber" },
     {
-      header: "ACTION",
-      accessor: "phoneNumber",
-      render: (_: any, row: any) => (
-        <div className="flex gap-4">
-          <img
-            src={editGray}
-            onClick={() => seteEditSalaryModal(true)}
-            className="cursor-pointer"
-          />
-          {row.status === "Pending" && (
-            <img
-              src={checkGreenBg}
-              onClick={() => setMarkAsPaidModal(true)}
-              className="cursor-pointer"
-            />
-          )}
-        </div>
+      header: "UNPAID MONTHS",
+      accessor: "unpaidMonths",
+      render: (value: string[]) => (
+        <span className="text-gray-700">
+          {value?.length > 0 ? value.join(", ") : "None"}
+        </span>
       ),
     },
-  ];
+    {
+      header: "DATE CREATED",
+      accessor: "createdAt",
+      render: (value: string) => (
+        <span className="text-gray-700">
+          {new Date(value).toLocaleDateString("en-GB", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })}
+        </span>
+      ),
+    },
+    {
+      header: "LAST UPDATED",
+      accessor: "updatedAt",
+      render: (value: string) => (
+        <span className="text-gray-700">
+          {new Date(value).toLocaleDateString("en-GB", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })}
+        </span>
+      ),
+    },
+    {
+      header: "ACTIONS",
+      accessor: "_id",
+      sortable: false,
+      width: "280px",
+      render: (_: string, row: FinanceRecord) => {
+        const { staffType, staffId } = row;
 
-  const data = [
-    {
-      id: 1,
-      name: "John Yinka",
-      phoneNumber: "08123456789",
-      status: "Approved",
-      date: "2025-09-01",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      phoneNumber: "08098765432",
-      status: "Pending",
-      date: "2025-09-02",
-    },
-    {
-      id: 3,
-      name: "Michael Brown",
-      phoneNumber: "07011223344",
-      status: "Overdue",
-      date: "2025-09-03",
-    },
-    {
-      id: 4,
-      name: "Sophia Johnson",
-      phoneNumber: "09033445566",
-      status: "Active",
-      date: "2025-09-04",
-    },
-    {
-      id: 5,
-      name: "David Williams",
-      phoneNumber: "08155667788",
-      status: "Declined",
-      date: "2025-09-05",
+        let path = "";
+        if (staffType === "creditAgent") {
+          path = `/credit-agents/credit-agents-info/${staffId}?tab=finance`;
+        } else if (staffType === "manager") {
+          path = `/user-management/managers-info/${staffId}?tab=finance`;
+        } else if (staffType === "director") {
+          path = `/user-management/director-info/${staffId}?tab=finance`;
+        } else {
+          path = `/finance/records/${row._id}`;
+        }
+
+        return (
+          <div className="flex items-center gap-2">
+            {/* View Details */}
+            <Button
+              variant="outline"
+              height="h-8"
+              width="w-20"
+              onClick={() => navigate(path)}
+            >
+              View
+            </Button>
+
+            {/* Edit Salary */}
+            <Button
+              variant="muted"
+              height="h-8"
+              width="w-24"
+              onClick={() => {
+                setSelectedStaff(row);
+                seteEditSalaryModal(true);
+              }}
+            >
+              Edit Salary
+            </Button>
+
+            {/* Pay Salary */}
+            <Button
+              height="h-8"
+              width="w-24"
+              onClick={() => {
+                setSelectedStaff(row);
+                setMarkAsPaidModal(true);
+              }}
+            >
+              Pay Salary
+            </Button>
+          </div>
+        );
+      },
     },
   ];
   return (
@@ -152,68 +198,52 @@ export default function Finance() {
           Process Salaries
         </Button>
       </div>
-
       <div className="grid md:grid-cols-3 grid-cols-1 gap-6 bg-white p-6 rounded-xl">
         <LoanMetricsCard
           title="Total Employees"
-          value="32"
+          value={summary?.totalStaff ?? 0}
           icon={user}
           iconBg="#0088FF1A"
+          isLoading={isLoadingReport}
         />
+
         <LoanMetricsCard
-          title="Monthly Salary bill"
-          value="₦2,015,000"
+          title="Monthly Salary Bill"
+          value={`₦${summary?.averageMonthlySpending?.toLocaleString() ?? 0}`}
           icon={money1}
           iconBg="#34C7591A"
+          isLoading={isLoadingReport}
         />
+
         <LoanMetricsCard
           title="Pending Payments"
-          value="3"
+          value={summary?.totalPendingAmount?.toLocaleString() ?? 0}
           icon={infoCircle}
           iconBg="#FF383C1A"
+          isLoading={isLoadingReport}
         />
       </div>
 
-      <div className="bg-white p-6 rounded-xl space-y-[27.5px]">
-        <div className="flex items-center justify-between">
-          <div className="lg:max-w-[517px] w-full relative">
-            <input
-              placeholder="Search by name, phone number, or client ID"
-              className="h-10 w-full pl-10 pr-3 outline-0 bg-[#F9FAFB] shadow-[0px_1px_2px_0px_#1018280D] rounded-[6px] text-[14px] leading-[145%] placeholder:text-[#667185]"
-            />
-
-            <Search className="absolute top-2 left-3 w-5 h-5" color="#475367" />
-          </div>
-
-          <div className="space-x-4 hidden md:block">
-            <select
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              className="py-3 px-4 bg-gray-50 border border-gray-100 rounded-[8px] text-gray-700 text-[16px] leading-[145%] outline-none"
-            >
-              <option value="">Date Added</option>
-              <option value={10}>Ten</option>xw
-              <option value={20}>Twenty</option>
-              <option value={30}>Thirty</option>
-            </select>
-          </div>
-        </div>
-        <Table columns={columns} data={data} />
-        <div className="flex items-center justify-between text-[14px] leadng-[145%] text-gray-700 font-semibold">
-          <button className="sm:px-4 px-2 py-2 flex items-center gap-2 border border-gray-300 rounded-[8px] cursor-pointer">
-            <img src={addPrimary} className="hidden sm:block" />
-            <p className="hidden sm:block">Previous</p>
-            <img src={leftArrow} className="block sm:hidden" />
-          </button>
-
-          <p>Showing 1–20 of 250 clients</p>
-
-          <button className="sm:px-4 px-2 py-2 flex items-center gap-2 border border-gray-300 rounded-[8px] cursor-pointer">
-            <p className="hidden sm:block">Next</p>
-            <img src={addPrimary} className="hidden sm:block" />
-            <img src={rightArrow} className="block sm:hidden" />
-          </button>
-        </div>
+      <div className="bg-white rounded-xl space-y-[27.5px]">
+        <CustomTable
+          data={records}
+          columns={columns}
+          searchable={true}
+          searchPlaceholder="Search by agent ID, name, email, or status"
+          searchFields={
+            ["creditAgentID", "firstName", "lastName", "email", "status"]
+            // as (keyof CreditAgent)[]
+          }
+          pagination={true}
+          pageSize={10}
+          showPageSizeSelector={true}
+          pageSizeOptions={[5, 10, 20, 50]}
+          emptyMessage="No credit agents found"
+          loading={isLoading}
+          // onRowClick={(row) => {
+          //   navigate(`/credit-agents/credit-agents-info/${row._id}`);
+          // }}
+        />
       </div>
 
       <Modal
@@ -231,20 +261,30 @@ export default function Finance() {
       <Modal
         isOpen={editSalaryModal}
         onClose={() => seteEditSalaryModal(false)}
-        closeOnOutsideClick={true} // toggle this
+        closeOnOutsideClick={true}
         title="Edit Salary"
         maxWidth="max-w-[745px]"
       >
-        <EditSalaryModal onClose={() => seteEditSalaryModal(false)} />
+        {selectedStaff && (
+          <EditSalaryModal
+            onClose={() => seteEditSalaryModal(false)}
+            staff={selectedStaff}
+          />
+        )}
       </Modal>
 
       <Modal
         isOpen={markAsPaidModal}
         onClose={() => setMarkAsPaidModal(false)}
-        closeOnOutsideClick={true} // toggle this
+        closeOnOutsideClick={true}
         maxWidth="max-w-[407px]"
       >
-        <MarkAsPaidModal onClose={() => setMarkAsPaidModal(false)} />
+        {selectedStaff && (
+          <MarkAsPaidModal
+            onClose={() => setMarkAsPaidModal(false)}
+            staff={selectedStaff}
+          />
+        )}
       </Modal>
     </div>
   );

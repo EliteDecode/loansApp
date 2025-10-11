@@ -1,26 +1,46 @@
 import Button from "@/components/Button/Button";
 
-interface MarkAsPaidProps {
-  onClose: () => void;
+interface StaffInfo {
+  staffName: string;
+  currentSalary: number;
+  staffType?: string;
 }
 
-export default function MarkAsPaidModal({ onClose }: MarkAsPaidProps) {
+interface MarkAsPaidProps {
+  onClose: () => void;
+  staff: StaffInfo;
+  onConfirm: () => void;
+}
+
+export default function MarkAsPaidModal({
+  onClose,
+  staff,
+  onConfirm,
+}: MarkAsPaidProps) {
+  const { staffName, currentSalary, staffType } = staff;
+
   return (
-    <div className="space-y-4 pt-4">
-      <h1 className="text-center text-[24px] leading-[120%] tracking-[-2%] font-semibold text-gray-700">
-        Confirm Action
+    <div className="space-y-6 pt-4 leading-[145%] text-gray-700">
+      <h1 className="text-center text-[22px] sm:text-[24px] leading-[120%] tracking-[-2%] font-semibold">
+        Confirm Payment
       </h1>
-      <p className="text-[16px] leading-[145%] text-gray-700 text-center">
-        Are you sure you want to mark salary payment of{" "}
-        <span className="font-semibold">₦450,000</span> for{" "}
-        <span className="font-semibold">Adebayo Olumide</span> as paid?
+
+      <p className="text-[15px] sm:text-[16px] text-center text-gray-600">
+        Are you sure you want to mark the salary payment of{" "}
+        <span className="font-semibold text-gray-900">
+          ₦{currentSalary.toLocaleString()}
+        </span>{" "}
+        for <span className="font-semibold text-gray-900">{staffName}</span>
+        {staffType ? ` (${staffType})` : ""} as paid?
       </p>
 
-      <div className="flex items-center justify-center gap-4 ">
-        <Button variant="outline" type="button" onClick={() => onClose()}>
+      <div className="flex items-center justify-center gap-4 mt-6">
+        <Button variant="outline" type="button" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="success">Mark as paid</Button>
+        <Button variant="success" onClick={onConfirm} type="button">
+          Mark as Paid
+        </Button>
       </div>
     </div>
   );
