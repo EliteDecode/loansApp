@@ -68,6 +68,7 @@ export const updateDirector = async (directorId: string, data: any) => {
     `/director/update/${directorId}`,
     data
   );
+
   return response.data;
 };
 

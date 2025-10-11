@@ -1,17 +1,22 @@
+// src/hooks/useDirectorEditHook.ts
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { agentEditValidationSchemas } from "../helpers/validationSchemas";
-import {
-  updateCreditAgent,
-  resetAgent,
-} from "@/services/features/agent/agentSlice";
-import { getCreditAgentDetails } from "@/services/features/agent/agentService";
-import type { AppDispatch, RootState } from "@/store";
-import type { CreditAgent } from "@/services/features/agent/agent.types";
 
-// Agent edit form values type
-export interface AgentEditFormValues {
+import { directorEditValidationSchemas } from "../helpers/validationSchemas";
+import type { AppDispatch, RootState } from "@/store";
+import type { Director } from "@/services/features/director/director.types";
+import { resetDirector, updateDirector } from "@/services/features";
+import { getDirectorDetails } from "@/services/features/director/directorService";
+
+// import {
+//   getDirectorDetails,
+//   updateDirector,
+//   resetDirector,
+// } from "@/services/features/director/directorService";
+
+// Director edit form values type
+export interface DirectorEditFormValues {
   firstName: string;
   lastName: string;
   gender: string;
@@ -31,58 +36,56 @@ export interface AgentEditFormValues {
   employmentLetter: string;
 }
 
-// Agent edit hook return type
-export interface UseAgentEditReturn {
-  // State
-  agent: CreditAgent | null;
+// Hook return type
+export interface UseDirectorEditReturn {
+  director: Director | null;
   isLoading: boolean;
   isUpdating: boolean;
   showSuccessModal: boolean;
   showErrorModal: boolean;
   errorMessage: string;
 
-  // Actions
-  handleFinish: (values: AgentEditFormValues) => Promise<void>;
+  handleFinish: (values: DirectorEditFormValues) => Promise<void>;
   handleSuccessModalClose: () => void;
   handleErrorModalClose: () => void;
 
-  // Validation
-  validationSchemas: typeof agentEditValidationSchemas;
+  validationSchemas: typeof directorEditValidationSchemas;
 }
 
-export const useAgentEditHook = (): UseAgentEditReturn => {
+export const useDirectorEditHook = (): UseDirectorEditReturn => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const dispatch = useDispatch<AppDispatch>();
 
-  // Local state for agent editing
-  const [agent, setAgent] = useState<CreditAgent | null>(null);
+  const [director, setDirector] = useState<Director | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Get Redux state for agent update
   const {
     isLoading: isUpdating,
     isSuccess,
     isError,
     message,
-  } = useSelector((state: RootState) => state.agent);
+  } = useSelector((state: RootState) => state.director);
 
-  // Clear agent state when component mounts
+  // Reset state
   useEffect(() => {
-    dispatch(resetAgent());
+    dispatch(resetDirector());
   }, [dispatch]);
 
-  // Handle success state
+  // Handle success
   useEffect(() => {
-    if (isSuccess && message === "agent updated successfully") {
+    if (
+      isSuccess &&
+      message?.toLowerCase().includes("director updated successfully")
+    ) {
       setShowSuccessModal(true);
     }
   }, [isSuccess, message]);
 
-  // Handle error state
+  // Handle error
   useEffect(() => {
     if (isError && message) {
       setErrorMessage(message);
@@ -90,34 +93,36 @@ export const useAgentEditHook = (): UseAgentEditReturn => {
     }
   }, [isError, message]);
 
-  // Fetch agent details
+  // Fetch director details
   useEffect(() => {
-    const fetchAgentDetails = async () => {
+    const fetchDirectorDetails = async () => {
       if (!id) return;
       try {
         setIsLoading(true);
-        const response = await getCreditAgentDetails(id);
-        if (response.success) {
-          setAgent(response.data);
+        const response = await getDirectorDetails(id);
+        if (response?.success) {
+          setDirector(response.data);
         }
       } catch (error) {
-        console.error("Error fetching agent details:", error);
+        console.error("Error fetching director details:", error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchAgentDetails();
+    fetchDirectorDetails();
   }, [id]);
 
-  // Handle agent update
-  const handleFinish = async (values: AgentEditFormValues): Promise<void> => {
+  // Handle director update
+  const handleFinish = async (
+    values: DirectorEditFormValues
+  ): Promise<void> => {
     if (!id) return;
 
     const updateData = {
       firstName: values.firstName,
       lastName: values.lastName,
       gender: values.gender,
-      dateOfBirth: values.dateOfBirth.toISOString(),
+      dateOfBirth: values.dateOfBirth?.toISOString(),
       email: values.email,
       phoneNumber: values.phoneNumber,
       residentialAddress: values.residentialAddress,
@@ -126,45 +131,42 @@ export const useAgentEditHook = (): UseAgentEditReturn => {
       bankName: values.bankName,
       bankAccount: values.bankAccount,
       employmentType: values.employmentType,
-      dateOfEmployment: values.dateOfEmployment.toISOString(),
+      dateOfEmployment: values.dateOfEmployment?.toISOString(),
       validNIN: values.validNIN,
       utilityBill: values.utilityBill,
       passport: values.passport,
       employmentLetter: values.employmentLetter,
     };
 
-    dispatch(updateCreditAgent({ creditAgentId: id, data: updateData }));
+    dispatch(updateDirector({ directorId: id, data: updateData }));
   };
 
-  // Handle success modal close
+  // Success modal close
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    dispatch(resetAgent());
-    navigate("/credit-agents");
+    dispatch(resetDirector());
+    navigate("/user-management?tab=directors");
   };
 
-  // Handle error modal close
+  // Error modal close
   const handleErrorModalClose = () => {
     setShowErrorModal(false);
     setErrorMessage("");
-    dispatch(resetAgent());
+    dispatch(resetDirector());
   };
 
   return {
-    // State
-    agent,
+    director,
     isLoading,
     isUpdating,
     showSuccessModal,
     showErrorModal,
     errorMessage,
 
-    // Actions
     handleFinish,
     handleSuccessModalClose,
     handleErrorModalClose,
 
-    // Validation
-    validationSchemas: agentEditValidationSchemas,
+    validationSchemas: directorEditValidationSchemas,
   };
 };

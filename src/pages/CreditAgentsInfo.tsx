@@ -13,26 +13,24 @@ import Modal from "@/components/Modal/Modal";
 import { getCreditAgentDetails } from "@/services/features/agent/agentSlice";
 import type { CreditAgent } from "@/services/features/agent/agent.types";
 import { useProfileHook } from "@/hooks";
-import { useSelector, useDispatch } from "react-redux";
-import type { RootState, AppDispatch } from "@/store";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "@/store";
+import { toggleCreditAgentStatus } from "@/services/features";
+import { showErrorToast, showSuccessToast } from "@/lib/toastUtils";
 
 export default function CreditAgentsInfo() {
   const [openDeactivateAgentModal, setOpenDeactivateAgentModal] =
     useState(false);
+  const [agent, setAgent] = useState<CreditAgent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isToggling, setIsToggling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
   const { role } = useProfileHook();
-
-  // Get data from Redux store
-  const { currentAgent, isFetching, isError, message } = useSelector(
-    (state: RootState) => state.agent
-  );
-
-  const agent = currentAgent as CreditAgent | null;
-  const error = isError ? message : null;
 
   const tabs = [
     { label: "Overview", id: "overview" },
@@ -41,23 +39,69 @@ export default function CreditAgentsInfo() {
     { label: "Finance", id: "finance" },
   ];
 
-  // get tab from URL (default to first tab)
   const queryParams = new URLSearchParams(location.search);
   const tabFromUrl = queryParams.get("tab");
-
   const initialTabIndex = tabs.findIndex((t) => t.id === tabFromUrl);
   const [value, setValue] = useState(
     initialTabIndex !== -1 ? initialTabIndex : 0
   );
 
-  // Fetch agent details using Redux
+  // 🧩 Fetch agent details
   useEffect(() => {
-    if (id) {
-      dispatch(getCreditAgentDetails(id));
-    }
+    const fetchAgentDetails = async () => {
+      if (!id) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // ✅ dispatch the thunk and unwrap the payload
+        const response = await dispatch(getCreditAgentDetails(id)).unwrap();
+
+        if (response?.success) {
+          setAgent(response.data);
+        } else {
+          setError(response?.message || "Failed to fetch agent details");
+        }
+      } catch (err: any) {
+        setError(err?.message || "An error occurred while fetching data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAgentDetails();
   }, [id, dispatch]);
 
-  // update tab state when URL changes (back/forward nav)
+  // 🔁 Toggle activation/deactivation
+  const handleToggleStatus = async () => {
+    if (!agent?._id) return;
+    setIsToggling(true);
+
+    try {
+      // ✅ unwrap so you get actual payload
+      const res = await dispatch(toggleCreditAgentStatus(agent._id)).unwrap();
+
+      showSuccessToast(res?.message || "Status updated successfully");
+      setOpenDeactivateAgentModal(false);
+
+      // ✅ refetch and unwrap again
+      const refreshed = await dispatch(
+        getCreditAgentDetails(agent._id)
+      ).unwrap();
+      if (refreshed?.success) setAgent(refreshed.data);
+    } catch (err: any) {
+      showErrorToast(
+        err?.message ||
+          err?.response?.data?.message ||
+          "Failed to update agent status. Try again."
+      );
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
+  // 🧭 Handle tab switching
   useEffect(() => {
     if (tabFromUrl) {
       const index = tabs.findIndex((t) => t.id === tabFromUrl);
@@ -65,15 +109,14 @@ export default function CreditAgentsInfo() {
     }
   }, [tabFromUrl]);
 
-  // handle tab change
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
     const newTabId = tabs[newValue].id;
-    navigate(`?tab=${newTabId}`, { replace: true }); // ✅ updates URL without reload
+    navigate(`?tab=${newTabId}`, { replace: true });
   };
 
-  // Loading state
-  if (isFetching) {
+  // 🕓 Loading
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -81,7 +124,7 @@ export default function CreditAgentsInfo() {
     );
   }
 
-  // Error state
+  // ❌ Error
   if (error) {
     return (
       <div className="text-center py-8">
@@ -93,7 +136,6 @@ export default function CreditAgentsInfo() {
     );
   }
 
-  // No agent data
   if (!agent) {
     return (
       <div className="text-center py-8">
@@ -105,8 +147,11 @@ export default function CreditAgentsInfo() {
     );
   }
 
+  const isActive = agent.status === "active";
+
   return (
     <div className="space-y-6">
+      {/* 🔹 Header */}
       <div className="p-6 bg-white space-y-4 rounded-xl">
         <div
           className="flex items-center gap-2 cursor-pointer w-fit"
@@ -118,7 +163,7 @@ export default function CreditAgentsInfo() {
           </p>
         </div>
 
-        <div className="flex md:items-center items-start justify-between flex-col md:flex-row gap-4 w-full">
+        <div className="flex md:items-center justify-between flex-col md:flex-row gap-4 w-full">
           <div className="flex items-center gap-6 w-full">
             <img
               src={agent.passport || profileImage}
@@ -128,24 +173,21 @@ export default function CreditAgentsInfo() {
                 e.currentTarget.src = profileImage;
               }}
             />
-
             <div className="space-y-2">
-              <h4 className="text-[20px] leading-[120%] tracking-[-2%] text-gray-700 font-semibold">
+              <h4 className="text-[20px] font-semibold text-gray-700">
                 {agent.firstName} {agent.lastName}
               </h4>
-              <p className="text-[14px] leading-[145%] text-gray-500">
+              <p className="text-[14px] text-gray-500">
                 Agent ID: {agent.creditAgentID}
               </p>
               <div
-                className={`py-1 px-3 text-[12px] leading-[145%] w-fit rounded-xl ${
-                  agent.status === "active"
+                className={`py-1 px-3 text-[12px] rounded-xl w-fit ${
+                  isActive
                     ? "text-[#0F973D] bg-[#0F973D1A]"
-                    : agent.status === "inactive"
-                    ? "text-[#F3A218] bg-[#F3A2181A]"
-                    : "text-[#CB1A14] bg-[#CB1A141A]"
+                    : "text-[#F3A218] bg-[#F3A2181A]"
                 }`}
               >
-                {agent.status.charAt(0).toUpperCase() + agent.status.slice(1)}
+                {isActive ? "Active" : "Inactive"}
               </div>
             </div>
           </div>
@@ -156,25 +198,27 @@ export default function CreditAgentsInfo() {
                 variant="outline"
                 icon={<img src={editIcon} alt="" />}
                 onClick={() => navigate(`/credit-agents/edit/${id}`)}
-                width="md:w-[145px] w-full"
+                width="md:w-[155px] w-full"
                 height="h-14"
               >
                 Edit Agent
               </Button>
+
               <Button
-                variant="danger"
+                variant={isActive ? "danger" : "success"}
                 icon={<img src={deactivateIcon} alt="" />}
                 onClick={() => setOpenDeactivateAgentModal(true)}
                 width="md:w-[198px] w-full"
                 height="h-14"
               >
-                Deactivate Agent
+                {isActive ? "Deactivate Agent" : "Activate Agent"}
               </Button>
             </div>
           )}
         </div>
       </div>
 
+      {/* 🔹 Tabs */}
       <div className="p-6 bg-white space-y-4 rounded-xl">
         <Tabs
           value={value}
@@ -183,16 +227,7 @@ export default function CreditAgentsInfo() {
           scrollButtons="auto"
           sx={{
             mb: "25px",
-            "& .MuiTab-root": {
-              textTransform: "none",
-              height: 41,
-              minWidth: "fit-content",
-              px: 2,
-              paddingY: 0,
-              "@media (min-width:600px)": {
-                height: 52,
-              },
-            },
+            "& .MuiTab-root": { textTransform: "none", height: 41, px: 2 },
             "& .MuiTabs-flexContainer": { gap: "16px" },
             "& .MuiTabs-indicator": { display: "none" },
           }}
@@ -201,24 +236,14 @@ export default function CreditAgentsInfo() {
             <Tab
               key={tab.id}
               label={
-                <div className="flex items-center gap-2 text-[14px] leading-[145%] font-medium">
+                <div className="flex items-center gap-2 text-[14px] font-medium">
                   <span className="tab-text">{tab.label}</span>
                 </div>
               }
               sx={{
-                textTransform: "none",
-                minWidth: "fit-content",
-                px: 2,
-                py: 0,
-                "& .tab-text": {
-                  color: "#344054",
-                  whiteSpace: "nowrap",
-                },
-                "&.Mui-selected .tab-text": {
-                  color: "#002D62",
-                },
+                "& .tab-text": { color: "#344054" },
+                "&.Mui-selected .tab-text": { color: "#002D62" },
                 "&.Mui-selected": {
-                  color: "#002D62",
                   borderBottom: "1px solid #002D62",
                   bgcolor: "#E6EAEF",
                 },
@@ -256,73 +281,53 @@ export default function CreditAgentsInfo() {
                     "0"}
                 </p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-700 mb-2">
-                  Unpaid Months
-                </h4>
-                <p className="text-lg">
-                  {agent.financeRecord?.unpaidMonths?.length || 0} months
-                </p>
-                {agent.financeRecord?.unpaidMonths?.length > 0 && (
-                  <div className="mt-2">
-                    {agent.financeRecord.unpaidMonths.map((month, index) => (
-                      <span
-                        key={index}
-                        className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded mr-1 mb-1"
-                      >
-                        {month}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-700 mb-2">
-                  Payment Records
-                </h4>
-                {agent.financeRecord?.paymentRecords?.length > 0 ? (
-                  <div>
-                    <p className="text-lg font-semibold">
-                      {agent.financeRecord.paymentRecords.length} payments
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Last updated:{" "}
-                      {new Date(
-                        agent.financeRecord.updatedAt
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No payment records</p>
-                )}
-              </div>
             </div>
           </div>
         )}
       </div>
 
+      {/* 🔒 Modal */}
       <Modal
         isOpen={openDeactivateAgentModal}
-        onClose={() => setOpenDeactivateAgentModal(false)}
-        closeOnOutsideClick={true} // toggle this
+        onClose={() => {
+          if (!isToggling) setOpenDeactivateAgentModal(false);
+        }}
+        closeOnOutsideClick={!isToggling}
         title="Confirm Action"
         maxWidth="max-w-[455px]"
       >
         <div className="space-y-8 pt-4 border-t border-gray-200">
-          <p className="text-[16px] leading-[145%] text-gray-700">
-            Are you sure you want to deactivate {agent.firstName}{" "}
-            {agent.lastName}? This will restrict access but not delete data.
+          <p className="text-[16px] text-gray-700">
+            Are you sure you want to{" "}
+            <span className="font-semibold">
+              {isActive ? "deactivate" : "activate"}
+            </span>{" "}
+            {agent.firstName} {agent.lastName}? This will{" "}
+            {isActive
+              ? "restrict their access but not delete data."
+              : "restore their access to the system."}
           </p>
 
           <div className="flex items-center justify-end gap-4 ">
             <Button
               variant="outline"
               type="button"
+              disabled={isToggling}
               onClick={() => setOpenDeactivateAgentModal(false)}
             >
               Cancel
             </Button>
-            <Button variant="danger">Confirm</Button>
+            <Button
+              variant={isActive ? "danger" : "success"}
+              onClick={handleToggleStatus}
+              disabled={isToggling}
+            >
+              {isToggling
+                ? "Processing..."
+                : isActive
+                ? "Deactivate"
+                : "Activate"}
+            </Button>
           </div>
         </div>
       </Modal>

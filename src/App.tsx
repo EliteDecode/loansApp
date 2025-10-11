@@ -40,6 +40,7 @@ import AddDirector from "./pages/AddDirector";
 import ManagersInfo from "./pages/ManagersInfo";
 import DirectionsInfo from "./pages/DirectionsInfo";
 import EditManager from "./pages/EditManager";
+import EditDirector from "./pages/EditDirector";
 
 function App() {
   const { role } = useSelector((state: RootState) => state.auth);
@@ -184,6 +185,14 @@ function App() {
           element={
             <RoleRoute allowedRoles={["director"]}>
               <EditManager />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="user-management/director/edit/:id"
+          element={
+            <RoleRoute allowedRoles={["director"]}>
+              <EditDirector />
             </RoleRoute>
           }
         />

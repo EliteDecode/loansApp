@@ -235,3 +235,36 @@ export const managerEditValidationSchemas = [
     employmentLetter: Yup.string().required("Employment letter is required"),
   }),
 ];
+
+export const directorEditValidationSchemas = [
+  // Step 1: Personal Information
+  Yup.object({
+    firstName: Yup.string().required("First name is required"),
+    lastName: Yup.string().required("Last name is required"),
+    gender: Yup.string().required("Gender is required"),
+    dateOfBirth: Yup.date().required("Date of birth is required"),
+    email: Yup.string()
+      .email("Invalid email format")
+      .required("Email is required"),
+    phoneNumber: Yup.string().required("Phone number is required"),
+    residentialAddress: Yup.string().required(
+      "Residential address is required"
+    ),
+    stateOfResidence: Yup.string().required("State of residence is required"),
+    lgaOfResidence: Yup.string().required("LGA of residence is required"),
+  }),
+  // Step 2: Employment Details
+  Yup.object({
+    employmentType: Yup.string().required("Employment type is required"),
+    dateOfEmployment: Yup.date().required("Date of employment is required"),
+    bankName: Yup.string().required("Bank name is required"),
+    bankAccount: Yup.string().required("Bank account number is required"),
+  }),
+  // Step 3: Documents
+  Yup.object({
+    validNIN: Yup.string().required("Valid NIN is required"),
+    utilityBill: Yup.string().required("Utility bill is required"),
+    passport: Yup.string().required("Passport photo is required"),
+    employmentLetter: Yup.string().required("Employment letter is required"),
+  }),
+];
