@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import arrowLeft from "@/assets/icons/arrow-left.svg";
 import editIcon from "@/assets/icons/edit-icon.svg";
 import profileImage from "@/assets/images/d920cc99a8a164789b26497752374a4d5d852cc9.jpg";
-import deactivateIcon from "@/assets/icons/deactivate-icon.svg";
+import deactivateIcon from "@/assets/icons/info-circle-D.svg";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Button from "@/components/Button/Button";
@@ -11,28 +11,27 @@ import CreditAgentOverView from "@/components/ui/CreditAgentOverView";
 import CreditAgentsClients from "@/components/ui/CreditAgentsClients";
 import CreditAgentsLoans from "@/components/ui/CreditAgentsLoans";
 import Modal from "@/components/Modal/Modal";
-import { getManagerDetails } from "@/services/features/director/directorSlice";
 import type { Manager } from "@/services/features/manager/manager.types";
 import { useProfileHook } from "@/hooks";
-import type { RootState, AppDispatch } from "@/store";
+import { showErrorToast, showSuccessToast } from "@/lib/toastUtils";
+
+import type { AppDispatch } from "@/store";
+import { toggleManagerStatus } from "@/services/features";
+import { getManagerDetails } from "@/services/features/director/directorService";
 
 export default function ManagersInfo() {
   const [openDeactivateAgentModal, setOpenDeactivateAgentModal] =
     useState(false);
+  const [manager, setManager] = useState<Manager | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isToggling, setIsToggling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
   const { role } = useProfileHook();
-
-  // Get manager data from Redux store
-  const { currentDirector, isFetching, isError, message } = useSelector(
-    (state: RootState) => state.director
-  );
-
-  const manager = currentDirector as Manager | null;
-  const error = isError ? message : null;
 
   const tabs = [
     { label: "Overview", id: "overview" },
@@ -41,23 +40,71 @@ export default function ManagersInfo() {
     { label: "Finance", id: "finance" },
   ];
 
-  // get tab from URL (default to first tab)
   const queryParams = new URLSearchParams(location.search);
   const tabFromUrl = queryParams.get("tab");
-
   const initialTabIndex = tabs.findIndex((t) => t.id === tabFromUrl);
   const [value, setValue] = useState(
     initialTabIndex !== -1 ? initialTabIndex : 0
   );
 
-  // Fetch manager details using Redux
-  useEffect(() => {
-    if (id) {
-      dispatch(getManagerDetails(id));
-    }
-  }, [id, dispatch]);
+  /** ✅ Toggle manager activation/deactivation */
+  const handleToggleStatus = async () => {
+    if (!manager?._id) return;
+    setIsToggling(true);
 
-  // update tab state when URL changes (back/forward nav)
+    try {
+      const res = await dispatch(toggleManagerStatus(manager._id)).unwrap();
+
+      showSuccessToast(
+        res?.message ||
+          (manager.status === "active"
+            ? "Manager deactivated successfully"
+            : "Manager activated successfully")
+      );
+
+      setOpenDeactivateAgentModal(false);
+
+      // ✅ Refresh manager details after toggle
+      const refreshed = await getManagerDetails(manager._id);
+      if (refreshed.success) setManager(refreshed.data);
+    } catch (err: any) {
+      showErrorToast(
+        err?.message ||
+          err?.response?.data?.message ||
+          "Failed to toggle manager status. Try again."
+      );
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
+  /** ✅ Fetch manager details */
+  useEffect(() => {
+    const fetchManagerDetails = async () => {
+      if (!id) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await getManagerDetails(id);
+
+        if (response.success) {
+          setManager(response.data);
+        } else {
+          setError(response.message || "Failed to fetch manager details");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchManagerDetails();
+  }, [id]);
+
+  /** ✅ Update tab state when URL changes */
   useEffect(() => {
     if (tabFromUrl) {
       const index = tabs.findIndex((t) => t.id === tabFromUrl);
@@ -65,15 +112,15 @@ export default function ManagersInfo() {
     }
   }, [tabFromUrl]);
 
-  // handle tab change
+  /** ✅ Handle tab change */
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
     const newTabId = tabs[newValue].id;
-    navigate(`?tab=${newTabId}`, { replace: true }); // ✅ updates URL without reload
+    navigate(`?tab=${newTabId}`, { replace: true });
   };
 
-  // Loading state
-  if (isFetching) {
+  // --- UI STATES ---
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -81,7 +128,6 @@ export default function ManagersInfo() {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="text-center py-8">
@@ -91,11 +137,10 @@ export default function ManagersInfo() {
     );
   }
 
-  // No agent data
   if (!manager) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-600 mb-4">Managers not found</p>
+        <p className="text-gray-600 mb-4">Manager not found</p>
         <Button onClick={() => navigate(-1)}>Back to Managers</Button>
       </div>
     );
@@ -126,14 +171,14 @@ export default function ManagersInfo() {
             />
 
             <div className="space-y-2">
-              <h4 className="text-[20px] leading-[120%] tracking-[-2%] text-gray-700 font-semibold">
+              <h4 className="text-[20px] font-semibold text-gray-700">
                 {manager.firstName} {manager.lastName}
               </h4>
-              <p className="text-[14px] leading-[145%] text-gray-500">
+              <p className="text-[14px] text-gray-500">
                 Manager ID: {manager.managerID}
               </p>
               <div
-                className={`py-1 px-3 text-[12px] leading-[145%] w-fit rounded-xl ${
+                className={`py-1 px-3 text-[12px] w-fit rounded-xl ${
                   manager.status === "active"
                     ? "text-[#0F973D] bg-[#0F973D1A]"
                     : manager.status === "inactive"
@@ -147,7 +192,7 @@ export default function ManagersInfo() {
             </div>
           </div>
 
-          {(role === "manager" || role === "director") && (
+          {role === "director" && (
             <div className="flex md:flex-row flex-col gap-4 md:ml-auto">
               <Button
                 variant="outline"
@@ -158,20 +203,34 @@ export default function ManagersInfo() {
               >
                 Edit Manager
               </Button>
-              <Button
-                variant="danger"
-                icon={<img src={deactivateIcon} alt="" />}
-                onClick={() => setOpenDeactivateAgentModal(true)}
-                width="md:w-[198px] w-full"
-                height="h-14"
-              >
-                Deactivate Manager
-              </Button>
+
+              {manager.status === "active" ? (
+                <Button
+                  variant="danger"
+                  icon={<img src={deactivateIcon} alt="" />}
+                  onClick={() => setOpenDeactivateAgentModal(true)}
+                  width="md:w-[198px] w-full"
+                  height="h-14"
+                >
+                  Deactivate Manager
+                </Button>
+              ) : (
+                <Button
+                  variant="success"
+                  icon={<img src={deactivateIcon} alt="" />}
+                  onClick={() => setOpenDeactivateAgentModal(true)}
+                  width="md:w-[198px] w-full"
+                  height="h-14"
+                >
+                  Activate Manager
+                </Button>
+              )}
             </div>
           )}
         </div>
       </div>
 
+      {/* Tabs */}
       <div className="p-6 bg-white space-y-4 rounded-xl">
         <Tabs
           value={value}
@@ -180,16 +239,6 @@ export default function ManagersInfo() {
           scrollButtons="auto"
           sx={{
             mb: "25px",
-            "& .MuiTab-root": {
-              textTransform: "none",
-              height: 41,
-              minWidth: "fit-content",
-              px: 2,
-              paddingY: 0,
-              "@media (min-width:600px)": {
-                height: 52,
-              },
-            },
             "& .MuiTabs-flexContainer": { gap: "16px" },
             "& .MuiTabs-indicator": { display: "none" },
           }}
@@ -197,23 +246,10 @@ export default function ManagersInfo() {
           {tabs.map((tab) => (
             <Tab
               key={tab.id}
-              label={
-                <div className="flex items-center gap-2 text-[14px] leading-[145%] font-medium">
-                  <span className="tab-text">{tab.label}</span>
-                </div>
-              }
+              label={tab.label}
               sx={{
                 textTransform: "none",
                 minWidth: "fit-content",
-                px: 2,
-                py: 0,
-                "& .tab-text": {
-                  color: "#344054",
-                  whiteSpace: "nowrap",
-                },
-                "&.Mui-selected .tab-text": {
-                  color: "#002D62",
-                },
                 "&.Mui-selected": {
                   color: "#002D62",
                   borderBottom: "1px solid #002D62",
@@ -299,25 +335,30 @@ export default function ManagersInfo() {
                   <p className="text-gray-500">No payment records</p>
                 )}
               </div>
+              {/* Salary, unpaid amount, unpaid months, etc */}
             </div>
           </div>
         )}
       </div>
 
+      {/* Confirm Modal */}
       <Modal
         isOpen={openDeactivateAgentModal}
         onClose={() => setOpenDeactivateAgentModal(false)}
-        closeOnOutsideClick={true} // toggle this
         title="Confirm Action"
         maxWidth="max-w-[455px]"
       >
         <div className="space-y-8 pt-4 border-t border-gray-200">
-          <p className="text-[16px] leading-[145%] text-gray-700">
-            Are you sure you want to deactivate {manager.firstName}{" "}
-            {manager.lastName}? This will restrict access but not delete data.
+          <p className="text-[16px] text-gray-700">
+            Are you sure you want to{" "}
+            {manager.status === "active" ? "deactivate" : "activate"}{" "}
+            {manager.firstName} {manager.lastName}? This will{" "}
+            {manager.status === "active"
+              ? "restrict access but not delete data."
+              : "reactivate their access."}
           </p>
 
-          <div className="flex items-center justify-end gap-4 ">
+          <div className="flex justify-end gap-4 ">
             <Button
               variant="outline"
               type="button"
@@ -325,7 +366,17 @@ export default function ManagersInfo() {
             >
               Cancel
             </Button>
-            <Button variant="danger">Confirm</Button>
+            <Button
+              variant={manager.status === "active" ? "danger" : "success"}
+              onClick={handleToggleStatus}
+              disabled={isToggling}
+            >
+              {isToggling
+                ? "Processing..."
+                : manager.status === "active"
+                ? "Deactivate"
+                : "Activate"}
+            </Button>
           </div>
         </div>
       </Modal>

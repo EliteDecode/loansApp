@@ -412,23 +412,7 @@ const directorSlice = createSlice({
           "Failed to retrieve managers. Please try again.";
       })
 
-      // Get Manager Details
-      .addCase(getManagerDetails.pending, (state) => {
-        state.isFetching = true;
-        state.isError = false;
-        state.message = "";
-      })
-      .addCase(getManagerDetails.fulfilled, (state, action) => {
-        state.isFetching = false;
-        state.currentDirector = action.payload?.data || null;
-      })
-      .addCase(getManagerDetails.rejected, (state, action) => {
-        state.isFetching = false;
-        state.isError = true;
-        state.message = action.payload as string;
-      })
-
-      // Update Credit Agent
+      // Update manager Agent
       .addCase(updateManager.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
@@ -446,6 +430,86 @@ const directorSlice = createSlice({
         state.isError = true;
         state.message = action.payload as string;
         state.isSuccess = false;
+      })
+
+      // Toggle Director Status
+      .addCase(toggleDirectorStatus.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(toggleDirectorStatus.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.message =
+          action.payload?.message || "Director status updated successfully";
+        console.log(action);
+
+        // Optional: update director status in currentDirector if same ID
+        if (
+          state.currentDirector &&
+          action.payload?.data?._id === state.currentDirector._id
+        ) {
+          state.currentDirector.status = action.payload.data.status;
+        }
+      })
+      .addCase(toggleDirectorStatus.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.isSuccess = false;
+        state.message = action.payload as string;
+      })
+
+      // Update director
+      .addCase(updateDirector.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(updateDirector.fulfilled, (state, _) => {
+        state.isLoading = false;
+        state.isError = false;
+        state.isSuccess = true;
+        state.message = "director updated successfully";
+      })
+      .addCase(updateDirector.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload as string;
+        state.isSuccess = false;
+      })
+
+      // Toggle manager status
+      .addCase(toggleManagerStatus.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(toggleManagerStatus.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.message =
+          action.payload?.message || "Manager status updated successfully";
+        console.log(action);
+
+        // Optional: update director status in currentDirector if same ID
+        if (
+          state.currentDirector &&
+          action.payload?.data?._id === state.currentDirector._id
+        ) {
+          state.currentDirector.status = action.payload.data.status;
+        }
+      })
+      .addCase(toggleManagerStatus.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.isSuccess = false;
+        state.message = action.payload as string;
       });
 
     // Logout - Now handled by auth service

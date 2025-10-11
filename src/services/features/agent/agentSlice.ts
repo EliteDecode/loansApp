@@ -277,7 +277,38 @@ const agentSlice = createSlice({
         state.isError = true;
         state.message = action.payload as string;
         state.isSuccess = false;
+      })
+
+      // toogle credit agent status
+      .addCase(toggleCreditAgentStatus.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.isSuccess = false;
+        state.message = "";
+      })
+      .addCase(toggleCreditAgentStatus.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.message =
+          action.payload?.message || "Director status updated successfully";
+        console.log(action);
+
+        // Optional: update director status in currentDirector if same ID
+        if (
+          state.currentAgent &&
+          action.payload?.data?._id === state.currentAgent._id
+        ) {
+          state.currentAgent.status = action.payload.data.status;
+        }
+      })
+      .addCase(toggleCreditAgentStatus.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.isSuccess = false;
+        state.message = action.payload as string;
       });
+
     // Logout - Now handled by auth service
   },
 });

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Formik, Form, Field } from "formik";
-import type { FieldProps } from "formik";
+import { Formik, Form, Field, ErrorMessage, type FieldProps } from "formik";
 import {
   Stepper,
   Step,
@@ -13,24 +12,23 @@ import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import Button from "@/components/Button/Button";
-import { useAgentEditHook } from "@/hooks";
 import SuccessModal from "@/components/modals/SuccessModal/SuccessModal";
 import ErrorModal from "@/components/modals/ErrorModal/ErrorModal";
 import FileUploadWithProgress from "@/components/FileUploadWithProgress/FileUploadWithProgress";
-import { ErrorMessage } from "formik";
 import verified from "@/assets/icons/verifiedBlue.svg";
 import TextInput from "@/components/TextInput/TextInput";
 import SelectInput from "@/components/SelectInput/SelectInput";
+import { useDirectorEditHook } from "@/hooks/useDirectorEditHook/useDirectorEditHook";
 
 const steps = ["Personal Info", "Work & Role Details", "Document Uploads"];
 
-export default function EditAgent() {
+export default function EditDirector() {
   const [shouldSubmit, setShouldSubmit] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const navigate = useNavigate();
 
   const {
-    agent,
+    director,
     isLoading,
     showSuccessModal,
     showErrorModal,
@@ -39,9 +37,7 @@ export default function EditAgent() {
     handleSuccessModalClose,
     handleErrorModalClose,
     validationSchemas,
-  } = useAgentEditHook();
-
-  console.log(agent);
+  } = useDirectorEditHook();
 
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
@@ -51,23 +47,23 @@ export default function EditAgent() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading agent details...</p>
+          <p className="mt-4 text-gray-600">Loading director details...</p>
         </div>
       </div>
     );
   }
 
-  if (!agent) {
+  if (!director) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-600">Agent not found</p>
+          <p className="text-red-600">Director not found</p>
           <Button
             variant="outline"
-            onClick={() => navigate("/credit-agents")}
+            onClick={() => navigate(-1)}
             className="mt-4"
           >
-            Back to Agents
+            Back to Directors
           </Button>
         </div>
       </div>
@@ -75,26 +71,25 @@ export default function EditAgent() {
   }
 
   const initialValues = {
-    firstName: agent.firstName || "",
-    lastName: agent.lastName || "",
-    gender: agent.gender || "",
-    dateOfBirth: agent.dateOfBirth ? dayjs(agent.dateOfBirth) : dayjs(),
-    email: agent.email || "",
-    phoneNumber: agent.phoneNumber || "",
-    residentialAddress: agent.residentialAddress || "",
-    stateOfResidence: agent.stateOfResidence || "",
-    lgaOfResidence: agent.lgaOfResidence || "",
-    bankName: agent.bankName || "",
-    bankAccount: agent.bankAccount || "",
-    employmentType: agent.employmentType || "",
-    dateOfEmployment: agent.dateOfEmployment
-      ? dayjs(agent.dateOfEmployment)
+    firstName: director.firstName || "",
+    lastName: director.lastName || "",
+    gender: director.gender || "",
+    dateOfBirth: director.dateOfBirth ? dayjs(director.dateOfBirth) : dayjs(),
+    email: director.email || "",
+    phoneNumber: director.phoneNumber || "",
+    residentialAddress: director.residentialAddress || "",
+    stateOfResidence: director.stateOfResidence || "",
+    lgaOfResidence: director.lgaOfResidence || "",
+    bankName: director.bankName || "",
+    bankAccount: director.bankAccount || "",
+    employmentType: director.employmentType || "",
+    dateOfEmployment: director.dateOfEmployment
+      ? dayjs(director.dateOfEmployment)
       : dayjs(),
-    salaryAmount: agent.salaryAmount || "",
-    validNIN: agent.validNIN || "",
-    utilityBill: agent.utilityBill || "",
-    passport: agent.passport || "",
-    employmentLetter: agent.employmentLetter || "",
+    validNIN: director.validNIN || "",
+    utilityBill: director.utilityBill || "",
+    passport: director.passport || "",
+    employmentLetter: director.employmentLetter || "",
   };
 
   function CustomStepIcon({ active, completed }: StepIconProps) {
@@ -114,13 +109,7 @@ export default function EditAgent() {
       "stateOfResidence",
       "lgaOfResidence",
     ],
-    [
-      "bankName",
-      "bankAccount",
-      "employmentType",
-      "dateOfEmployment",
-      "salaryAmount",
-    ],
+    ["bankName", "bankAccount", "employmentType", "dateOfEmployment"],
     ["validNIN", "utilityBill", "passport", "employmentLetter"],
   ];
 
@@ -129,7 +118,7 @@ export default function EditAgent() {
       <div className="md:p-8 p-4 pt-0">
         <div className="md:pb-8 mb-4">
           <h1 className="md:text-[28px] text-[18px] font-semibold text-gray-700">
-            Edit Agent
+            Edit Director
           </h1>
         </div>
 
@@ -166,13 +155,13 @@ export default function EditAgent() {
           </Stepper>
         </Box>
 
-        {/* Success and Error Modals */}
+        {/* ✅ Success and Error Modals */}
         <SuccessModal
           open={showSuccessModal}
           onClose={handleSuccessModalClose}
-          title="Agent Updated Successfully!"
-          message="The agent information has been updated successfully."
-          confirmText="View Agents"
+          title="Director Updated Successfully!"
+          message="The director's information has been updated successfully."
+          confirmText="View Directors"
           onConfirm={handleSuccessModalClose}
         />
 
@@ -192,7 +181,7 @@ export default function EditAgent() {
               validationSchema={validationSchemas[activeStep]}
               onSubmit={(values, formikHelpers) => {
                 if (shouldSubmit && activeStep === steps.length - 1) {
-                  handleFinish(values, formikHelpers);
+                  handleFinish(values);
                 } else {
                   formikHelpers.setSubmitting(false);
                 }
@@ -289,7 +278,7 @@ export default function EditAgent() {
                                 name={field.name}
                                 value={displayValue}
                                 onChange={handleChange}
-                                placeholder="Enter agent's phone number (+234XXXXXXXXXX)"
+                                placeholder="Enter manager's phone number (+234XXXXXXXXXX)"
                                 className="w-full h-14 px-4 outline-primary border rounded-[6px] placeholder:text-gray-400 focus:outline-none"
                               />
                               <ErrorMessage
@@ -353,13 +342,6 @@ export default function EditAgent() {
                           className="text-red-500 text-xs"
                         />
                       </div>
-
-                      {/* <TextInput
-                        name="salaryAmount"
-                        label="Salary Amount"
-                        amount={true}
-                        type="tel"
-                      /> */}
                     </div>
                   )}
 
@@ -380,7 +362,7 @@ export default function EditAgent() {
                                   .replace(/([A-Z])/g, " $1")
                                   .replace(/^./, (s) => s.toUpperCase())}
                                 accept="image/*,application/pdf"
-                                folder="loan-app/agents"
+                                folder="loan-app/directors"
                                 value={field.value}
                                 onFileUploaded={(url) =>
                                   form.setFieldValue(field.name, url)
@@ -420,7 +402,7 @@ export default function EditAgent() {
                         type="submit"
                         disabled={isSubmitting || isLoading}
                       >
-                        {isSubmitting ? "Saving..." : "Update Agent"}
+                        {isSubmitting ? "Saving..." : "Update Director"}
                       </Button>
                     ) : (
                       <Button
@@ -428,8 +410,6 @@ export default function EditAgent() {
                         disabled={isSubmitting || isLoading}
                         onClick={async () => {
                           const errors = await validateForm();
-
-                          // only mark fields from current step
                           const currentStepFields = stepFields[activeStep];
                           const touchedMap = currentStepFields.reduce(
                             (acc, key) => ({ ...acc, [key]: true }),
@@ -438,7 +418,6 @@ export default function EditAgent() {
 
                           setTouched(touchedMap);
 
-                          // Check for errors only within this step
                           const hasErrors = Object.keys(errors).some((key) =>
                             currentStepFields.includes(key)
                           );
