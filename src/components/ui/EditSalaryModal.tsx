@@ -3,89 +3,128 @@ import { Field, Form, Formik } from "formik";
 import TextInput from "../TextInput/TextInput";
 import Button from "../Button/Button";
 import * as Yup from "yup";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { showErrorToast, showSuccessToast } from "@/lib/toastUtils";
+import { useDispatch } from "react-redux";
+import { updateStaffSalary } from "@/services/features";
+import type { AppDispatch } from "@/store";
 
 // ✅ Define form values type
 interface EditSalaryValues {
   newMonthlySalary: string;
-  date: any | null; // or Dayjs | null if you want strict typing
   reason: string;
 }
+
+interface StaffData {
+  staffId: string;
+  staffName: string;
+  staffType: "creditAgent" | "manager" | "director";
+  currentSalary: number;
+  staffEmail: string;
+  _id: string;
+}
+
 interface EditSalaryProps {
   onClose: () => void;
+  staff: StaffData;
 }
 
 // ✅ Validation schema
 const validationSchema = Yup.object().shape({
   newMonthlySalary: Yup.string().required("New salary is required"),
-  date: Yup.date().nullable().required("Effective date is required"),
   reason: Yup.string()
+    .min(10, "Reason must be at least 10 characters")
     .max(200, "Reason cannot exceed 200 characters")
-    .optional(),
+    .required("Reason is required"),
 });
 
-export default function EditSalaryModal({ onClose }: EditSalaryProps) {
-  const value = "Manager";
-
+export default function EditSalaryModal({ onClose, staff }: EditSalaryProps) {
   const initialValues: EditSalaryValues = {
     newMonthlySalary: "",
-    date: null,
     reason: "",
   };
 
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { staffType, staffId } = staff;
+
+  // Color and label mapping by staff type
+  const typeStyles: Record<string, string> = {
+    manager: "bg-[#8B15C21A] text-[#8B15C2]",
+    creditAgent: "bg-[#0088FF1A] text-[#0088FF]",
+    director: "bg-[#FF7A001A] text-[#FF7A00]",
+  };
+
   return (
-    <div className="leading-[145%] space-y-6">
-      <div className="flex gap-6">
+    <div className="space-y-6 leading-[145%]">
+      {/* Header Info */}
+      <div className="flex gap-6 items-center  pb-4">
         <img
           src={profileImage}
-          alt=""
-          className="h-20 w-20 object-cover rounded-[40px]"
+          alt={staff.staffName}
+          className="h-20 w-20 object-cover rounded-full shadow-sm"
         />
 
-        <div className="space-y-2">
-          <h6 className="text-[20px] leading-[120%] tracking-[-2%] font-semibold text-gray-700">
-            Adebayo Olumide
+        <div className="space-y-1">
+          <h6 className="text-[20px] leading-[120%] tracking-[-2%] font-semibold text-gray-800">
+            {staff.staffName}
           </h6>
-          <p className="text-[14px] text-gray-500">Manager ID: #MG001</p>
+          <p className="text-[14px] text-gray-500">
+            {staff.staffType.charAt(0).toUpperCase() + staff.staffType.slice(1)}{" "}
+            ID: #{staff.staffId.slice(-4).toUpperCase()}
+          </p>
           <p
-            className={`px-3 py-1 text-[12px] leading-[145%] rounded-[12px] w-fit ${
-              {
-                Manager: "bg-[#8B15C21A] text-[#8B15C2]",
-                Agent: "bg-[#0088FF1A] text-[#0088FF]",
-              }[value] || "bg-gray-100 text-gray-600"
+            className={`px-3 py-1 text-[12px] font-medium leading-[145%] rounded-[12px] w-fit capitalize ${
+              typeStyles[staff.staffType] || "bg-gray-100 text-gray-600"
             }`}
           >
-            {value}
+            {staff.staffType.replace(/([A-Z])/g, " $1")}
           </p>
         </div>
       </div>
 
-      <div className="space-y-2 leading-[145%] text-gray-600">
-        <p className="text-[16px]">Current Salary</p>
-        <h6 className="text-[18px] font-semibold">₦450,000</h6>
+      {/* Current Salary */}
+      <div className="space-y-1 text-gray-700">
+        <p className="text-[15px]">Current Salary</p>
+        <h6 className="text-[20px] font-semibold">
+          ₦{staff.currentSalary?.toLocaleString() || "0"}
+        </h6>
       </div>
 
+      {/* Form */}
       <Formik
         enableReinitialize
         initialValues={initialValues}
         validationSchema={validationSchema}
-        onSubmit={(values, { resetForm }) => {
-          console.log("✅ Form Submitted:", values);
-          resetForm({ values });
-          onClose();
+        onSubmit={async (values, { resetForm }) => {
+          try {
+            const payload = {
+              staffId,
+              staffType,
+              currentSalary: Number(values.newMonthlySalary),
+              updateReason: values.reason,
+            };
+
+            const res = await dispatch(updateStaffSalary(payload)).unwrap();
+            showSuccessToast(res?.message || "Salary updated successfully!");
+            resetForm();
+            onClose();
+          } catch (err: any) {
+            const message =
+              err?.message || "Failed to update salary. Please try again.";
+            showErrorToast(message);
+          }
         }}
       >
         {({
           isSubmitting,
           values,
-          setFieldValue,
           touched,
           errors,
           handleChange,
           handleBlur,
         }) => (
-          <Form className="space-y-6 max-h-[80vh] overflow-auto">
+          <Form className="space-y-6 max-h-[70vh] overflow-auto pr-1">
+            {/* New Salary */}
             <Field
               name="newMonthlySalary"
               label="New Monthly Salary"
@@ -95,63 +134,39 @@ export default function EditSalaryModal({ onClose }: EditSalaryProps) {
               type="tel"
             />
 
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Effective Date
-                </label>
-                <DatePicker
-                  value={values.date}
-                  onChange={(newValue) => {
-                    setFieldValue("date", newValue);
-                  }}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: touched.date && Boolean(errors.date),
-                      helperText:
-                        touched.date && typeof errors.date === "string"
-                          ? errors.date
-                          : undefined,
-                    },
-                  }}
-                />
-              </div>
-            </LocalizationProvider>
-
             {/* Reason textarea */}
-            <div className="w-full flex-col flex gap-1">
+            <div className="w-full flex flex-col gap-1">
               <label
                 htmlFor="reason"
-                className="text-[16px] leading-[145%] font-medium text-gray-900"
+                className="text-[15px] font-medium text-gray-700"
               >
-                Reason for Change (Optional)
+                Reason for Change
               </label>
               <textarea
                 id="reason"
                 name="reason"
-                className={`resize-none h-[98px] p-4 rounded-[6px] border outline-primary ${
+                className={`resize-none h-[100px] p-3 rounded-[6px] border focus:outline-primary transition ${
                   touched.reason && errors.reason
                     ? "border-red-500"
                     : "border-gray-300"
                 }`}
-                placeholder="Enter reason"
+                placeholder="Enter reason for salary change"
                 value={values.reason}
                 onChange={handleChange}
                 onBlur={handleBlur}
               />
               {touched.reason && errors.reason && (
-                <span className="text-sm text-red-500">{errors.reason}</span>
+                <span className="text-xs text-red-500">{errors.reason}</span>
               )}
             </div>
 
             {/* Buttons */}
-            <div className="flex items-center justify-end gap-4">
+            <div className="flex items-center justify-end gap-4 pt-4 ">
               <Button variant="outline" type="button" onClick={() => onClose()}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save Salary"}
+                {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </Form>
